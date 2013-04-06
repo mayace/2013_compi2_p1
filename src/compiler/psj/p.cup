@@ -1,0 +1,199 @@
+package compiler.psj;
+
+import compiler.Attr;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.lang.Thread.State;
+import java.awt.Dimension;
+import java.awt.Point;
+
+
+parser code {:
+	
+	public LinkedList<compiler.Error> errors=new LinkedList<>();
+	public Personaje personaje=null;
+	
+	public void report_error(String message, Object info){
+		compiler.Error e=new compiler.Error(message,null,null);
+		if(info instanceof java_cup.runtime.Symbol){
+			e.setSym((java_cup.runtime.Symbol)info);
+		}
+		errors.add(e);
+	}
+	public void report_fatal_error(String message,Object info){
+		report_error(message,info);
+		errors.getLast().println();
+	}
+:};
+
+action code{:
+	
+	compiler.Error.Type LEXICO 		= compiler.Error.Type.LEXIC;
+	compiler.Error.Type SINTACTICO 	= compiler.Error.Type.SYNTACTIC;
+	compiler.Error.Type SEMANTICO 	= compiler.Error.Type.SEMANTIC;
+	String ERROR_ID					= compiler.Error.ERROR_ID;
+	String ERROR_INT				= compiler.Error.ERROR_INT;
+	String ERROR_BOOLEAN			= compiler.Error.ERROR_BOOLEAN;
+	
+	
+	
+	
+	public void error(String msg, java_cup.runtime.Symbol sym,compiler.Error.Type type){
+		compiler.Error e=parser.errors.getLast();
+		if(msg!=null){
+			e.setMsg(msg);
+		}
+		if(sym!=null){
+			e.setSym(sym);
+		}
+		e.setType(type);
+		e.println();
+	}
+	public void errorAll(String msg,Object sym,compiler.Error.Type type){
+		parser.report_error(msg,sym);
+		error(null,null,type);
+	}
+	
+	
+:}
+
+/****************************************************************************************/
+terminal		String	INT,ID,INICIAR,FINALIZAR,NOMBRE,VIDA,FUERZA,MAGIA,FUERZA_MAGICA,
+						COSTO_MAGICO,COLON
+						;
+non terminal	Attr	inicio,id,int,psj,psj_body,psj_list,psj_item,psj_nombre,psj_vida,psj_magia,
+						psj_fuerza_magica,psj_costo_magico,psj_fuerza
+						;
+						
+/****************************************************************************************/
+
+inicio			::=	psj
+					;
+psj				::=	INICIAR psj_body:x FINALIZAR
+					{:
+						String 	nombre			= 	x.getString("nombre");
+						Integer	vida			=	x.getInt("vida");
+						Integer	fuerza			=	x.getInt("fuerza");
+						Integer	magia			=	x.getInt("magia");
+						Integer	fuerza_magica	=	x.getInt("fuerza_magica");
+						Integer	costo_magico	=	x.getInt("costo_magico");
+						
+						
+						
+						if(nombre!=null&&vida!=null&&fuerza!=null&&magia!=null&&fuerza_magica!=null&&costo_magico!=null){
+							parser.personaje=new Personaje(nombre,vida,fuerza,magia,fuerza_magica,costo_magico);
+							System.out.println("Personaje: "+nombre+" creado...");
+						}
+						else{
+							Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+							if(nombre==null||nombre.isEmpty()){
+								errorAll("Falta nombre.",sym,SEMANTICO);
+							}
+							if(vida==null){
+								errorAll("Falta vida.",sym,SEMANTICO);
+							}
+							if(fuerza==null){
+								errorAll("Falta fuerza.",sym,SEMANTICO);
+							}
+							if(magia==null){
+								errorAll("Falta magia.",sym,SEMANTICO);
+							}
+							if(fuerza_magica==null){
+								errorAll("Falta fuerza magica.",sym,SEMANTICO);
+							}
+							if(costo_magico==null){
+								errorAll("Falta costo magico.",sym,SEMANTICO);
+							}
+						}
+						
+						
+					:}
+					|error		{:error("Se esperaba  Iniciar Personaje.",null,SINTACTICO);:}
+					;
+					
+psj_body		::=	psj_list:x			{:RESULT=x;:}
+					//|
+					;
+psj_list		::=	psj_list:l psj_item:x
+					{:
+						l.putAll(x);
+						RESULT=l;
+					:}
+					|psj_item:x				{:RESULT=x;:}
+					;
+					
+psj_item		::=	psj_nombre:x
+					{:
+						x.set("nombre",x.get("val"));
+						RESULT=x;
+					:}
+					|psj_vida:x				
+					{:
+						x.set("vida",x.get("val"));
+						RESULT=x;
+					:}
+					|psj_fuerza:x
+					{:
+						x.set("fuerza",x.get("val"));
+						RESULT=x;
+					:}
+					|psj_magia:x
+					{:
+						x.set("magia",x.get("val"));
+						RESULT=x;
+					:}
+					|psj_fuerza_magica:x
+					{:
+						x.set("fuerza_magica",x.get("val"));
+						RESULT=x;
+					:}
+					|psj_costo_magico:x		
+					{:
+						x.set("costo_magico",x.get("val"));
+						RESULT=x;
+					:}			
+					|error				
+					{:
+						error("Se esperaba un atributo.",null,SINTACTICO);
+						RESULT=new Attr();
+					:}
+					;
+					
+psj_nombre			::=	id:x COLON NOMBRE			{:RESULT=x;:}
+						;
+psj_vida			::=	int:x COLON VIDA			{:RESULT=x;:}
+						;
+psj_fuerza			::=	int:x COLON FUERZA			{:RESULT=x;:}
+						;
+psj_magia			::=	int:x COLON MAGIA			{:RESULT=x;:}
+						;
+psj_fuerza_magica	::=	int:x COLON FUERZA_MAGICA	{:RESULT=x;:}
+						;
+psj_costo_magico	::=	int:x COLON COSTO_MAGICO	{:RESULT=x;:}
+						;
+
+id					::=	ID:x
+						{:
+							Attr a=new Attr();
+							Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top);
+							a.set("val",x);
+							a.set("sym",sym);
+							
+							RESULT=a;
+						:}
+						;
+int					::=	INT:x
+						{:
+							Attr a=new Attr();
+							Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top);
+							a.set("val",x);
+							a.set("sym",sym);
+							RESULT=a;
+						:}
+						;

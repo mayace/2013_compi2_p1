@@ -1,0 +1,764 @@
+package compiler.lvl;
+
+import compiler.Attr;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.lang.Thread.State;
+import java.awt.Dimension;
+import java.awt.Point;
+
+
+parser code {:
+	
+	public LinkedList<compiler.Error> errors=new LinkedList<>();
+	public HashMap<String, Espacio> espacios=new HashMap<>();
+	public Estructura estructura=null;
+	
+	public void report_error(String message, Object info){
+		compiler.Error e=new compiler.Error(message,null,null);
+		if(info instanceof java_cup.runtime.Symbol){
+			e.setSym((java_cup.runtime.Symbol)info);
+		}
+		errors.add(e);
+		//System.err.println("Error "+errors.size());
+	}
+	public void report_fatal_error(String message,Object info){
+		report_error(message,info);
+		errors.getLast().println();
+	}
+:};
+
+action code{:
+	
+	compiler.Error.Type LEXICO 		= compiler.Error.Type.LEXIC;
+	compiler.Error.Type SINTACTICO 	= compiler.Error.Type.SYNTACTIC;
+	compiler.Error.Type SEMANTICO 	= compiler.Error.Type.SEMANTIC;
+	String ERROR_ID			= compiler.Error.ERROR_ID;
+	String ERROR_INT			= compiler.Error.ERROR_INT;
+	String ERROR_BOOLEAN	= compiler.Error.ERROR_BOOLEAN;
+	
+	
+	
+	
+	public void error(String msg, java_cup.runtime.Symbol sym,compiler.Error.Type type){
+		compiler.Error e=parser.errors.getLast();
+		if(msg!=null){
+			e.setMsg(msg);
+		}
+		if(sym!=null){
+			e.setSym(sym);
+		}
+		e.setType(type);
+		e.println();
+	}
+	public void errorAll(String msg,Object sym,compiler.Error.Type type){
+		parser.report_error(msg,sym);
+		error(null,null,type);
+	}
+	
+	
+	final HashSet<Thread> espacios_espera=new HashSet<>();
+	public void createEspacio	(Attr x){
+		
+		if(x==null){return;}
+		
+		final String			nombre		=	x.getString("nombre");
+		final File				imagen		=	(File)x.get("imagen");
+		final String 			extiende	=	x.getString("extiende");
+		final Espacio.Especial	especial	=	(Espacio.Especial)x.get("especial");
+		final Boolean 			pasable		=	x.getBoolean("pasable");
+		final Boolean			enemigo		=	x.getBoolean("enemigo");
+		final Boolean			inicio		=	x.getBoolean("inicio");
+		final Boolean			fin			=	x.getBoolean("fin");
+		
+		if(nombre!=null&&!nombre.isEmpty()&&imagen!=null){
+			final HashMap<String, Espacio> espacios = parser.espacios;
+			
+			Thread t=new Thread(new Runnable(){
+
+				@Override
+				public void run() {
+					Espacio espacio=new Espacio(nombre,imagen);
+					if(extiende!=null){
+						synchronized(espacios){
+							for(;;){
+								Espacio padre=espacios.get(extiende);
+								if(padre!=null){
+									//heredar del padre aqui
+									espacio=padre.clone();
+									espacio.setExtiende(padre);
+									espacio.setNombre(nombre);
+									espacio.setImagen(imagen);
+									break;
+								}
+								try{
+									System.out.println(nombre+ " esperando "+extiende+"...");
+									espacios.wait();
+								} catch (InterruptedException ex) {
+									//Error semantico... no se pudo ingresar por no encontrar al padre
+									System.err.println("Interrupted: "+ nombre);
+									return;
+								}
+							}
+						}
+					}
+					espacio.setEspecial(especial);
+					espacio.setPasable(pasable);
+					espacio.setEnemigo(enemigo);
+					espacio.setInicio(inicio);
+					espacio.setFin(fin);
+					put(espacio);
+					//System.out.println("Thread ended....");
+					espacios_espera.remove(this);
+				}
+				
+				public void put(Espacio espacio){
+					synchronized(espacios){
+						espacios.put(espacio.getNombre(),espacio);
+						System.out.println(espacio.getNombre()+" creado... ");
+						//System.out.println(espacio.toString());
+						espacios.notifyAll();
+					}
+				}
+			});
+			t.start();
+			espacios_espera.add(t);
+		}
+	}
+
+	
+	public void addCasilla(Estructura.Casilla casilla){
+		if(parser.estructura!=null){
+			if(casilla!=null){
+				try{
+					parser.estructura.addCasilla(casilla);
+				} catch(ArrayIndexOutOfBoundsException exc){
+					errorAll("Punto ("+casilla.getPunto().x+","+casilla.getPunto().y+") fuera de limite.",null,SEMANTICO);
+				}
+			}
+		}
+	}
+	void post(){
+		System.out.println("compiled ...");
+	}
+	
+:}
+
+/****************************************************************************************/
+
+terminal		String		IMPORTAR_TAG1,IMPORTAR_TAG2,ESPACIOS_TAG1,ESPACIOS_TAG2,
+						NIVEL_TAG1,NIVEL_TAG2
+						;
+terminal		String		ESPACIO_TAG1,ESPACIO_TAG2,NOMBRE_TAG1,NOMBRE_TAG2,ESPECIAL_TAG1,
+						ESPECIAL_TAG2,PASABLE_TAG1,PASABLE_TAG2,INICIO_TAG1,INICIO_TAG2,FIN_TAG1,
+						FIN_TAG2,ENEMIGO_TAG1,ENEMIGO_TAG2,EXTIENDE_TAG1,EXTIENDE_TAG2,IMAGEN_TAG1,
+						IMAGEN_TAG2,DANIO_TAG1,DANIO_TAG2,CURA_TAG1,CURA_TAG2,MAGIA_TAG1,MAGIA_TAG2,
+						INVENCIBLE_TAG1,INVENCIBLE_TAG2
+						;
+terminal		String		BOOLEAN,ANY,INT
+						;
+terminal		String		TAMANIO_TAG1,TAMANIO_TAG2,X_TAG1,X_TAG2,Y_TAG1,Y_TAG2,ESTRUCTURA_TAG1,ESTRUCTURA_TAG2,
+						CASILLA_TAG1,CASILLA_TAG2,TIPO_TAG1,TIPO_TAG2,PERSONAJE_TAG1,PERSONAJE_TAG2
+						;
+
+non terminal	Attr			inicio,lvl,lvl1,lvl2,importar,espacios,nivel,importar_body,espacios_body,nivel_body,any,int
+						;
+/*espacios*/						
+non terminal	Attr			espacios_list,espacios_item,espacios_espacio_extiende,espacios_espacio_nombre,
+						espacios_espacio_inicio,espacios_espacio_fin,espacios_espacio_enemigo,espacios_espacio_imagen,
+						espacios_espacio_pasable,espacios_espacio_especial,espacios_espacio,espacios_espacio_body,
+						espacios_espacio_list,espacios_espacio_item,espacios_espacio_extiende_body,espacios_espacio_nombre_body,
+						espacios_espacio_inicio_body,espacios_espacio_fin_body,espacios_espacio_imagen_body,espacios_espacio_especial_body,
+						espacios_espacio_enemigo_body,espacios_espacio_pasable_body,espacios_espacio_especial_list,espacios_espacio_especial_item,
+						espacios_espacio_especial_danio,espacios_espacio_especial_danio_body,espacios_espacio_especial_cura,espacios_espacio_especial_cura_body,
+						espacios_espacio_especial_magia,espacios_espacio_especial_magia_body,espacios_espacio_especial_invi,espacios_espacio_especial_invi_body
+						;
+/*nivel*/
+non terminal Attr		nivel_nombre,nivel_tamanio,nivel_tamanio_body,nivel_tamanio_list,nivel_tamanio_item,nivel_tamanio_x,nivel_tamanio_y,
+						nivel_estructura,nivel_estructura_body,nivel_estructura_list,nivel_estructura_item,nivel_estructura_tipo,nivel_body1,nivel_body2,
+						nivel_estructura_casilla,nivel_estructura_casilla_list,nivel_estructura_casilla_item,nivel_estructura_casilla_body,
+						nivel_nombre_body,nivel_tamanio_body_xy,nivel_estructura_tipo_body,nivel_estructura_personaje
+						;
+						
+/****************************************************************************************/
+inicio	::=		lvl				{:post();:}
+				;
+lvl		::=		importar lvl1
+				|error lvl1			{:error(" Malformación de la seción Import.",null,SINTACTICO);:}
+				|lvl1
+				;
+lvl1		::=		espacios lvl2		
+				|error lvl2			{:error(" Malformación de la seción Espacios.",null,SINTACTICO);:}
+				;
+lvl2		::=		nivel
+				|error			{:error(" Malformación de la seción Nivel.",null,SINTACTICO);:}
+				;
+				
+/*-----------------------------------------------------------------------------------*/
+importar	::=		IMPORTAR_TAG1	importar_body		IMPORTAR_TAG2
+				;
+				
+importar_body		::=	
+					;
+
+/*-----------------------------------------------------------------------------------*/
+espacios	::=		ESPACIOS_TAG1	espacios_body	ESPACIOS_TAG2
+					{:
+						//darles mas tiempo a los que esperan padres
+						//de lo contrario error
+						if(!espacios_espera.isEmpty()){
+							Thread.sleep(500);
+							for(Thread t : espacios_espera){
+								if(t.getState()==State.WAITING){	
+									t.interrupt();
+									//error
+								}
+							}
+							espacios_espera.clear();
+						}
+					:}
+					;
+				
+espacios_body	::=	espacios_list
+					|
+					;
+espacios_list		::=	espacios_list espacios_item
+						|espacios_item
+						;
+						
+espacios_item		::=	espacios_espacio
+						|error			{:error("Se esperaba una etiqueta <Espacio></Espacio>.",null,SINTACTICO);:}
+						;
+espacios_espacio		::=	ESPACIO_TAG1 espacios_espacio_body:x ESPACIO_TAG2			
+						{:
+							Espacio espacio=null;
+							
+							String nombre=x.getString("nombre");
+							File imagen=(File)x.get("imagen");
+							
+							if(nombre==null||nombre.isEmpty()){
+								Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+								errorAll("Falta nombre.",sym,SEMANTICO);
+							}
+							if(imagen==null){
+								Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+								errorAll("Falta imagen.",sym,SEMANTICO);
+							}
+							
+							
+							if(nombre!=null&&!nombre.isEmpty()&&imagen!=null){
+								createEspacio(x);
+							}
+							
+							
+							x.clear();
+							x.set("espacio",espacio);
+							RESULT=x;
+						:}
+						;
+espacios_espacio_body	::=	espacios_espacio_list:x		{:RESULT=x;:}	
+						|								{:RESULT=new Attr();:}
+						;
+espacios_espacio_list	::=	espacios_espacio_list:x espacios_espacio_item:x1
+						{:
+							x.putAll(x1);
+							RESULT=x;
+						:}
+						|espacios_espacio_item:x		{:RESULT=x;:}
+						;
+espacios_espacio_item		::=	espacios_espacio_extiende:x		{:RESULT=x;:}	
+								|espacios_espacio_nombre:x		{:RESULT=x;:}
+								|espacios_espacio_pasable:x		{:RESULT=x;:}
+								|espacios_espacio_especial:x	{:RESULT=x;:}
+								|espacios_espacio_inicio:x		{:RESULT=x;:}
+								|espacios_espacio_fin:x			{:RESULT=x;:}
+								|espacios_espacio_enemigo:x		{:RESULT=x;:}
+								|espacios_espacio_imagen:x		{:RESULT=x;:}
+								|error							{:error("Se esperaba una etiqueta Extiende, Nombre, Pasable, Especial, Inicio, Fin, Enemigo o Imagen",null,SINTACTICO);RESULT=new Attr();:}
+								;
+
+espacios_espacio_extiende		::=	EXTIENDE_TAG1 espacios_espacio_extiende_body:x EXTIENDE_TAG2	{:RESULT=x;:}
+							;
+espacios_espacio_extiende_body	::=	ANY:x		
+									{:
+										Attr attr=RESULT=new Attr();
+										attr.set("extiende",x);
+										RESULT=attr;
+									:}
+									|error		{:error(ERROR_ID,null,SINTACTICO);RESULT=new Attr();:}
+									|			{:RESULT=new Attr();:}
+									;
+							
+espacios_espacio_nombre		::=	NOMBRE_TAG1 espacios_espacio_nombre_body:x NOMBRE_TAG2		
+								{:
+									String nombre=x.getString("nombre");
+									if(nombre==null||nombre.isEmpty()){
+										Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+										errorAll("Falta nombre",sym,SEMANTICO);
+									}
+									RESULT=x;
+								:}
+								;
+espacios_espacio_nombre_body	::=	ANY:x
+									{:
+										Attr attr=RESULT=new Attr();
+										String nombre=x;
+										if(parser.espacios.containsKey(nombre)){
+											Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top);
+											errorAll("Espacio ya definido.",sym,SEMANTICO);
+										}else{
+											attr.set("nombre",nombre);	
+										}
+										RESULT=attr;
+									:}
+									|error		{:error(ERROR_ID,null,SINTACTICO);RESULT=new Attr();:}
+									|			{:RESULT=new Attr();:}
+									;
+							
+espacios_espacio_imagen		::=	IMAGEN_TAG1 espacios_espacio_imagen_body:x IMAGEN_TAG2
+								{:
+									File f=(File)x.get("imagen");
+									
+									if(f==null){
+										Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+										errorAll("Falta imagen.",sym,SEMANTICO);
+									}
+									RESULT=x;
+								:}
+								;
+espacios_espacio_imagen_body	::=	ANY:x
+									{:
+										Attr attr=RESULT=new Attr();
+										File imagen=new File (x);
+										if(!imagen.exists()){
+											Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top);
+											errorAll("No existe la imagen.",sym,SEMANTICO);
+										}else{
+											if(imagen.isDirectory()){
+												Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top);
+												errorAll("No es una imagen.",sym,SEMANTICO);
+											}
+											attr.set("imagen",imagen);
+										}
+										
+										RESULT=attr;
+									:}
+									|error		{:error(ERROR_ID,null,SINTACTICO);RESULT=new Attr();:}
+									|			{:RESULT=new Attr();:}
+									;
+							
+espacios_espacio_especial		::=	ESPECIAL_TAG1 espacios_espacio_especial_body:x ESPECIAL_TAG2		{:RESULT=x;:}
+							;
+espacios_espacio_especial_body	::=	espacios_espacio_especial_list:x		
+									{:
+										Espacio.Especial e=new Espacio.Especial();
+										e.setDanio(x.getInt("danio"));
+										e.setCura(x.getInt("cura"));
+										e.setMagia(x.getInt("magia"));
+										e.setInvencibilidad(x.getInt("invencibilidad"));
+										x.clear();
+										x.set("especial",e);
+										RESULT=x;
+									:}
+									|
+									{:
+										RESULT=new Attr();
+									:}
+									;
+espacios_espacio_especial_list	::=	espacios_espacio_especial_list:x espacios_espacio_especial_item:x1
+									{:
+										x.putAll(x1);
+										RESULT=x;
+									:}
+									|espacios_espacio_especial_item:x	{:RESULT=x;:}
+									;
+espacios_espacio_especial_item	::=	espacios_espacio_especial_danio:x	{:RESULT=x;:}
+								|espacios_espacio_especial_cura:x		{:RESULT=x;:}
+								|espacios_espacio_especial_magia:x		{:RESULT=x;:}
+								|espacios_espacio_especial_invi:x		{:RESULT=x;:}
+								|error		{:error("Se esperaba una etiqueta de dano,cura,magia o invencibilidad.",null,SINTACTICO);RESULT=new Attr();:}
+							;
+espacios_espacio_especial_danio	::=	DANIO_TAG1 espacios_espacio_especial_danio_body:x DANIO_TAG2			{:RESULT=x;:}
+									;
+espacios_espacio_especial_danio_body	::=	INT:x	
+											{:
+												Attr attr=RESULT=new Attr();
+												attr.set("danio",x);
+												RESULT=attr;
+											:}
+											|error	{:error(ERROR_INT,null,SINTACTICO);RESULT=new Attr();:}
+											|		{:RESULT=new Attr();:}
+											;
+espacios_espacio_especial_cura			::=	CURA_TAG1 espacios_espacio_especial_cura_body:x CURA_TAG2			{:RESULT=x;:}
+											;
+espacios_espacio_especial_cura_body		::=	INT:x	
+											{:
+												Attr attr=RESULT=new Attr();
+												attr.set("cura",x);
+												RESULT=attr;
+											:}
+											|error	{:error(ERROR_INT,null,SINTACTICO);RESULT=new Attr();:}
+											|		{:RESULT=new Attr();:}
+												;							
+espacios_espacio_especial_magia			::=	MAGIA_TAG1 espacios_espacio_especial_magia_body:x MAGIA_TAG2		{:RESULT=x;:}
+											;
+espacios_espacio_especial_magia_body	::=	INT:x	
+											{:
+												Attr attr=RESULT=new Attr();
+												attr.set("magia",x);
+												RESULT=attr;
+											:}
+											|error	{:error(ERROR_INT,null,SINTACTICO);RESULT=new Attr();:}
+											|		{:RESULT=new Attr();:}
+											;						
+espacios_espacio_especial_invi			::=	INVENCIBLE_TAG1 espacios_espacio_especial_invi_body:x INVENCIBLE_TAG2	{:RESULT=x;:}
+							;
+espacios_espacio_especial_invi_body		::=	INT:x	
+											{:
+												Attr attr=RESULT=new Attr();
+												attr.set("invencibilidad",x);
+												RESULT=attr;
+											:}
+											|error	{:error(ERROR_INT,null,SINTACTICO);RESULT=new Attr();:}
+											|		{:RESULT=new Attr();:}
+											;							
+							
+espacios_espacio_pasable		::=	PASABLE_TAG1 espacios_espacio_pasable_body:x PASABLE_TAG2	{:RESULT=x;:}
+									;
+espacios_espacio_pasable_body	::=	BOOLEAN:x	
+									{:
+										Attr attr=RESULT=new Attr();
+										boolean b=false;
+										if(x.equals("verdadero")){
+											b=true;
+										}
+										attr.set("pasable",b);
+										RESULT=attr;
+									:}
+									|error		
+									{:
+										error(ERROR_BOOLEAN,null,SINTACTICO);
+										RESULT=new Attr();
+									:}
+									|			{:RESULT=new Attr();:}
+									;
+							
+espacios_espacio_enemigo		::=	ENEMIGO_TAG1  espacios_espacio_enemigo_body:x ENEMIGO_TAG2	{:RESULT=x;:}
+									;
+espacios_espacio_enemigo_body	::=	BOOLEAN:x	
+									{:
+										Attr attr=RESULT=new Attr();
+										boolean b=false;
+										if(x.equals("verdadero")){
+											b=true;
+										}
+										attr.set("enemigo",b);
+										RESULT=attr;
+									:}
+									|error		
+									{:
+										error(ERROR_BOOLEAN,null,SINTACTICO);
+										RESULT=new Attr();
+									:}
+									|			{:RESULT=new Attr();:}
+									;
+
+espacios_espacio_inicio			::=	INICIO_TAG1 espacios_espacio_inicio_body:x INICIO_TAG2		{:RESULT=x;:}
+									;
+espacios_espacio_inicio_body	::=	BOOLEAN:x	
+									{:
+										Attr attr=RESULT=new Attr();
+										boolean b=false;
+										if(x.equals("verdadero")){
+											b=true;
+										}
+										attr.set("inicio",b);
+										RESULT=attr;
+									:}
+									|error		{:error(ERROR_BOOLEAN,null,SINTACTICO);RESULT=new Attr();:}
+									|			{:RESULT=new Attr();:}
+									;
+							
+espacios_espacio_fin		::=	FIN_TAG1 espacios_espacio_fin_body:x FIN_TAG2		{:RESULT=x;:}
+							;
+							
+espacios_espacio_fin_body	::=	BOOLEAN:x	
+								{:
+									Attr attr=RESULT=new Attr();
+									boolean b=false;
+									if(x.equals("verdadero")){
+										b=true;
+									}
+									attr.set("fin",b);
+									RESULT=attr;
+								:}
+								|error		{:error(ERROR_BOOLEAN,null,SINTACTICO);RESULT=new Attr();:}
+								|			{:RESULT=new Attr();:}
+							;							
+/*-----------------------------------------------------------------------------------*/
+nivel	::=		NIVEL_TAG1		nivel_body		NIVEL_TAG2
+				;
+nivel_body		::=	nivel_body1 nivel_estructura
+					|nivel_body1 error				{:error("Se esperaba etiqueta Estructura.",null,SINTACTICO);:}
+					|
+					;
+nivel_body1		::=	nivel_body2:x nivel_tamanio:x1 	
+					{:
+						String nombre=x.getString("nombre");
+						Dimension tamanio=(Dimension)x1.get("tamanio");
+						if(nombre!=null&&tamanio!=null){
+							parser.estructura=new Estructura(nombre,tamanio);
+						}
+					:}
+					|nivel_body2 error			
+					{:
+						error("Se esperaba etiqueta Tamano.",null,SINTACTICO);
+						RESULT=new Attr();
+					:}
+					;
+nivel_body2		::=	nivel_nombre:x				{:RESULT=x;:}
+					|error						
+					{:
+						error("Se esperaba etiqueta nombre",null,SINTACTICO);
+						RESULT=new Attr();
+					:}
+					;
+nivel_nombre		::=	NOMBRE_TAG1:x0 nivel_nombre_body:x NOMBRE_TAG2	
+					{:
+						String nombre=x.getString("nombre");
+						if(nombre==null||nombre.isEmpty()){
+							Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+							errorAll("Falta nombre de la estructura.",sym,SEMANTICO);
+						}
+						RESULT=x;
+					:}
+					;
+nivel_nombre_body	::=	any:x
+					{:
+						String nombre=x.getString("any");
+						x.clear();
+						x.set("nombre",nombre);
+						RESULT=x;
+					:}
+					|error	
+					{:
+						error(ERROR_ID,null,SINTACTICO);
+						RESULT=new Attr();
+					:}
+					|
+					{:RESULT=new Attr();:}
+					;
+any				::=	ANY:x	
+					{:
+						Attr a=new Attr();
+						a.set("any",x);
+						a.set("sym",CUP$Parser$stack.elementAt(CUP$Parser$top));
+						RESULT=a;
+					:}
+					;
+
+nivel_tamanio		::=	TAMANIO_TAG1:x0 nivel_tamanio_body:x TAMANIO_TAG2
+					{:
+						Integer _x=x.getInt("x");
+						Integer _y=x.getInt("y");
+						
+						Dimension tamanio=null;
+						if(_x!=null&&_y!=null){
+							tamanio=new Dimension(_x,_y);
+						} else{
+							//errores
+							Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+							if(_x==null){
+								errorAll("Falta etiqueta X.",sym,SEMANTICO);
+							}
+							if(_y==null){
+								errorAll("Falta etiqueta Y.",sym,SEMANTICO);
+							}
+						}
+						x.clear();
+						x.set("tamanio",tamanio);
+						RESULT=x;
+					:}
+					;
+nivel_tamanio_body	::=	nivel_tamanio_list:x	{:RESULT=x;:}
+						|						{:RESULT=new Attr();:}
+						;
+nivel_tamanio_list	::=	nivel_tamanio_list:x nivel_tamanio_item:x1
+						{:
+							x.putAll(x1);
+							RESULT=x;
+						:}
+						|nivel_tamanio_item:x	{:RESULT=x;:}
+					;
+nivel_tamanio_item	::=	nivel_tamanio_x:x	{:RESULT=x;:}
+						|nivel_tamanio_y:x	{:RESULT=x;:}
+						|error			
+						{:
+							error("Se esperaba una etiqueta X o Y",null,SINTACTICO);
+							RESULT=new Attr();
+						:}
+						;
+nivel_tamanio_x		::=	X_TAG1:x0 nivel_tamanio_body_xy:x X_TAG2
+						{:
+							Integer _x=x.getInt("int");
+							if(_x==null){
+								Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+								errorAll("Falta un valor el X.",sym,SEMANTICO);
+							}
+							x.clear();
+							x.set("x",_x);
+							RESULT=x;
+						:}
+						;
+nivel_tamanio_y		::=	Y_TAG1 nivel_tamanio_body_xy:x Y_TAG2
+						{:
+							Integer y=x.getInt("int");
+							if(y==null){
+								Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+								errorAll("Falta un valor el Y.",sym,SEMANTICO);
+							}
+							x.clear();
+							x.set("y",y);
+							RESULT=x;
+						:}
+						;
+nivel_tamanio_body_xy	::=	int:x		{:RESULT=x;:}
+							|error		{:error(ERROR_ID,null,SINTACTICO);RESULT=new Attr();:}
+							|
+							{:
+								RESULT=new Attr();
+							:}
+							;
+						
+int					::=	INT:x	{:RESULT=new Attr("int",x);:}
+						;
+						
+nivel_estructura		::=	ESTRUCTURA_TAG1 nivel_estructura_body:x ESTRUCTURA_TAG2		
+						{:
+							if(parser.estructura!=null){
+								Point[] nulls=parser.estructura.getNulls();
+								if(nulls!=null){
+									for(int i=0; i<nulls.length;i++){
+										Point p=nulls[i];
+										//System.err.println(p);
+										Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+										errorAll("Punto ("+p.x+","+p.y+") sin casilla.",sym,SEMANTICO); 
+									}
+								}
+							}
+							RESULT=x;
+						:}
+						;
+nivel_estructura_body	::=	nivel_estructura_list:x		{:RESULT=x;:}
+						|						{:RESULT=new Attr();:}
+						;
+nivel_estructura_list	::=	nivel_estructura_list:x nivel_estructura_item:x1
+						{:
+							x.putAll(x1);
+							RESULT=x;
+						:}
+						|nivel_estructura_item:x			{:RESULT=x;:}
+						;
+nivel_estructura_item	::=	nivel_estructura_casilla:x			{:RESULT=x;:}
+							|nivel_estructura_personaje:x		{:RESULT=x;:}
+							|error								{:RESULT=new Attr();:}
+							;
+nivel_estructura_casilla	::=	CASILLA_TAG1 nivel_estructura_casilla_body:x CASILLA_TAG2
+								{:
+									String tipo=x.getString("tipo");
+									Integer _x=x.getInt("x");
+									Integer _y=x.getInt("y");
+									Point punto=null;
+									
+									if(tipo==null||tipo.isEmpty()){
+										Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+										errorAll("Falta tipo.",sym,SEMANTICO);
+									}
+									if(_x==null){
+										Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+										errorAll("Falta X.",sym,SEMANTICO);
+									}
+									if(_y==null){
+										Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+										errorAll("Falta Y.",sym,SEMANTICO);
+									}
+									
+									if(_x!=null&&_y!=null){
+										punto=new Point(_x,_y);
+									}
+									
+									if(tipo!=null&&punto!=null){
+										
+										Espacio espacio=parser.espacios.get(tipo);
+										if(espacio!=null){
+											Estructura.Casilla casilla=new Estructura.Casilla(punto,espacio);
+											casilla.setTipo(espacio);
+											addCasilla(casilla);
+										}
+										
+									}
+									RESULT=x;
+								:}
+								;
+nivel_estructura_casilla_body	::=	nivel_estructura_casilla_list:x		{:RESULT=x;:}
+								|										{:RESULT=new Attr();:}
+								;
+nivel_estructura_casilla_list	::=	nivel_estructura_casilla_list:x nivel_estructura_casilla_item:x1
+								{:
+									x.putAll(x1);
+									RESULT=x;
+								:}
+								|nivel_estructura_casilla_item:x	{:RESULT=x;:}
+								;
+nivel_estructura_casilla_item	::=	nivel_tamanio_x:x		{:RESULT=x;:}
+								|nivel_tamanio_y:x			{:RESULT=x;:}
+								|nivel_estructura_tipo:x	{:RESULT=x;:}
+								|error						{:error("Se esperaba etiqueta X,Y o Tipo.",null,SINTACTICO);RESULT=new Attr();:}
+								;
+nivel_estructura_tipo			::=	TIPO_TAG1 nivel_estructura_tipo_body:x TIPO_TAG2
+									{:
+										String tipo=x.getString("tipo");
+										if(tipo==null){
+											Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+											errorAll("Falta nombre.",sym,SEMANTICO);
+										}
+										x.clear();
+										x.set("tipo",tipo);
+										
+										RESULT=x;
+									:}
+									;
+nivel_estructura_tipo_body	::=	any:x
+								{:
+									String tipo=x.getString("any");
+									Espacio espacio=parser.espacios.get(tipo);
+									if(espacio==null){
+										errorAll("No existe el Espacio.",x.get("sym"),SEMANTICO);
+									}
+									x.clear();
+									x.set("tipo",tipo);
+									RESULT=x;
+								:}
+								|error
+								{:
+									error(ERROR_ID,null,SINTACTICO);
+									RESULT=new Attr();
+								:}
+								|
+								{:
+									RESULT=new Attr();
+								:}
+								;
+								
+//////
+nivel_estructura_personaje		::=	PERSONAJE_TAG1 nivel_tamanio_body_xy:x  PERSONAJE_TAG2
+									{:
+										RESULT=x;
+									:}
+									;

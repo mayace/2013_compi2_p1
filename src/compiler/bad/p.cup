@@ -1,0 +1,1231 @@
+package compiler.bad;
+
+import compiler.Attr;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.HashSet;
+import java.lang.Thread.State;
+import java.awt.Dimension;
+import java.awt.Point;
+import compiler.bad.Enemigos.Hoja;
+import compiler.bad.Enemigos.Operacion;
+import compiler.bad.Enemigos.Simbolo;
+import compiler.bad.Enemigos.Simbolo.Tipo;
+import compiler.bad.Enemigos.Potencia;
+import compiler.Error;
+
+
+parser code {:
+	
+	public Enemigos enemigos =new Enemigos(50);
+	public LinkedList<compiler.Error> errores=new LinkedList<>();
+	
+	
+	public void report_error(String message, Object info){
+		compiler.Error e=new compiler.Error(message,null,null);
+		if(info instanceof java_cup.runtime.Symbol){
+			e.setSym((java_cup.runtime.Symbol)info);
+		}
+		errores.add(e);
+	}
+	public void report_fatal_error(String message,Object info){
+		report_error(message,info);
+		errores.getLast().println();
+	}
+:};
+
+action code{:
+	
+	compiler.Error.Type LEXICO 		= compiler.Error.Type.LEXIC;
+	compiler.Error.Type SINTACTICO 	= compiler.Error.Type.SYNTACTIC;
+	compiler.Error.Type SEMANTICO 	= compiler.Error.Type.SEMANTIC;
+	String ERROR_ID					= compiler.Error.ERROR_ID;
+	String ERROR_INT				= compiler.Error.ERROR_INT;
+	String ERROR_BOOLEAN			= compiler.Error.ERROR_BOOLEAN;
+	
+	Enemigos.Simbolo.Tipo	STRING	=	Enemigos.Simbolo.Tipo.STRING;
+	Enemigos.Simbolo.Tipo	BOOLEAN	=	Enemigos.Simbolo.Tipo.BOOLEAN;
+	Enemigos.Simbolo.Tipo	INTEGER	=	Enemigos.Simbolo.Tipo.INTEGER;
+	Enemigos.Simbolo.Tipo	LONG	=	Enemigos.Simbolo.Tipo.LONG;
+	Enemigos.Simbolo.Tipo	CHAR	=	Enemigos.Simbolo.Tipo.CHAR;
+	Enemigos.Simbolo.Tipo	FLOAT	=	Enemigos.Simbolo.Tipo.FLOAT;
+	
+	
+	Enemigos.Simbolo.Rol	VARIABLE	=	Enemigos.Simbolo.Rol.VARIABLE;
+	Enemigos.Simbolo.Rol	METODO		=	Enemigos.Simbolo.Rol.METODO;
+	Enemigos.Simbolo.Rol	FUNCION		=	Enemigos.Simbolo.Rol.FUNCION;
+	
+	Operacion	SUMA				=	Operacion.SUMA;
+	Operacion	RESTA				=	Operacion.RESTA;
+	Operacion	MULTIPLICACION		=	Operacion.MULTIPLICACION;
+	Operacion	DIVISION			=	Operacion.DIVISION;
+	
+	
+	public void error(String msg, java_cup.runtime.Symbol sym,compiler.Error.Type type){
+		compiler.Error e=parser.errores.getLast();
+		if(msg!=null){
+			e.setMsg(msg);
+		}
+		if(sym!=null){
+			e.setSym(sym);
+		}
+		e.setType(type);
+		e.println();
+	}
+	public void errorAll(String msg,Object sym,compiler.Error.Type type){
+		parser.report_error(msg,sym);
+		error(null,null,type);
+	}
+	
+	
+	public Enemigos getEnemigos(){
+		return parser.enemigos;
+	}
+	
+	public HashMap<Integer,Enemigos.Imagen> getImagenMap(){
+		return getEnemigos().getImagenMap();
+	}
+	public HashMap<Integer,Enemigos.Potencia> getPotenciaMap(){
+		return getEnemigos().getPotenciaMap();
+	}
+	public HashMap<Integer,Enemigos.Arma> getArmaMap(){
+		return getEnemigos().getArmaMap();
+	}
+	public HashMap<Integer,Enemigos.Enemigo> getEnemigoMap(){
+		return getEnemigos().getEnemigoMap();
+	}
+	public HashMap<Integer,Enemigos.Estrategia> getEstrategiaMap(){
+		return getEnemigos().getEstrategiaMap();
+	}
+	
+	
+	Hoja newHoja(Operacion oper,Hoja left,Hoja right){
+		return getEnemigos().new Hoja(oper,left,right);
+	}
+	Hoja newHoja(Object valor,Enemigos.Simbolo.Tipo tipo,Object symbol){
+		return getEnemigos().new Hoja(valor,tipo,symbol);
+	}
+:}
+
+/****************************************************************************************/
+terminal		String	INT,ID,BD,BC,BE,BOOLEAN,CHAR,FLOAT,LONG,P1,P2,COMA,KW_STRING,KW_BOOLEAN,
+						KW_CHAR,KW_FLOAT,KW_LONG,KW_INTEGER,XOR,OR,AND,NOT,EQUAL,NEQUAL,LTHAN,
+						LETHAN,BTHAN,BETHAN,ENULL,MINUS,PLUS,MULTI,DIV,NERROR,STRING,PROC_PRINTLN
+						;
+terminal		String	ADDF
+						;
+terminal		String	CREAR_IMAGEN,CREAR_POTENCIA,CREAR_ARMA,TINNY,LOW,MEDIUM,HIGHT,HEAVY,
+						CREAR_ENEMIGO,CREAR_ESTRATEGIA
+						;
+terminal		String	MIENTRAS,FIN_MIENTRAS,DETENER,PAUSAR,PARA,AUMENTAR,DISMINUIR,HACER,FIN_PARA,
+						SI,FIN_SI,ENTONCES,OTRO_CASO,SETF,FUNC_GET_MUNICIONES,FUNC_GET_LIBRE,FUNC_BORDE_TABLERO,
+						FUNC_GET_VAL,FUNC_GET_F,FUNC_GET_BOOL,FUNC_GET_STR,FUNC_GET_INT,FUNC_AUMENTAR,
+						FUNC_DISMINUIR,FUNC_ARMA_PROPIA,PROC_ASIGNAR_ARMA,PROC_ASIGNAR_PASO,PROC_ASIGNAR_SALTO,
+						PROC_AVANZAR,PROC_GIRAR,PROC_ASIGNAR_HABILIDAD,PROC_SETF
+						;
+non terminal	Attr	inicio,id,int,boolean,float,char,long,bad,bad1,bad2,expr,expr1,expr2,expr3,
+						expr4,expr5,expr6,expr7,expr8,string,println
+						;
+non terminal	Attr	bd,bd_body,bd_list,bd_item,bd_addf,bd_type,bd_addf_val
+						;
+non terminal	Attr	bc,bc_body,bc_list,bc_item,bc_crear_imagen,bc_crear_potencia,bc_crear_arma,
+						bc_crear_potencia_nivel,bc_crear_enemigo,bc_crear_estrategia
+						;
+non terminal	Attr	be,be_body,be_list,be_item,be_while,be_while_body,be_while_list,be_while_item,
+						be_for,be_for_body,be_for_list,be_for_item,be_if,be_if_body,be_if_list,be_if_item,
+						be_if_item_body,be_if_item_list,be_if_item_item,be_elseif,be_stmt,be_functions,
+						be_methods,be_setf,be_for1
+						;
+						
+/****************************************************************************************/
+
+inicio		::=	bad:x
+				{:
+					Hoja hoja=(Hoja)x.get("hoja");
+					if(parser.errores.isEmpty()){
+						hoja.exec();
+					}
+					System.out.println(".bad compiled...");
+				:}
+				|
+				;
+bad			::=	bad1:l be:x
+				{:
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.STMT,left,right);
+					
+					RESULT=new Attr("hoja",hoja);
+				:}
+				;
+bad1		::=	bad2:l bc:x
+				{:
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.STMT,left,right);
+					
+					RESULT=new Attr("hoja",hoja);
+				:}
+				;
+bad2		::=	bd:x			{:RESULT=x;:}
+				;
+/*************************/				
+bd			::=	BD bd_body:x	{:RESULT=x;:}
+				;
+bd_body		::=	bd_list:x		{:RESULT=x;:}
+				|				{:RESULT=new Attr();:}
+				;
+bd_list		::=	bd_list:l bd_item:x
+				{:
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.STMT,left,right);
+					
+					RESULT=new Attr("hoja",hoja);
+				:}
+				|bd_item:x	{:RESULT=x;:}
+				;
+bd_item		::=	bd_addf:x	{:RESULT=x;:}
+				|println:x	{:RESULT=x;:}
+				|error		{:error("Se esperaba 'addf'.",null,SINTACTICO); RESULT=new Attr();:}
+				;
+bd_addf		::=	ADDF P1 id:x COMA bd_type:t bd_addf_val:e  P2
+				{:
+					Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-6);
+					String id=x.getString("val");
+					Enemigos.Simbolo.Tipo tipo=(Enemigos.Simbolo.Tipo)t.get("tipo");
+					
+					Hoja left= (Hoja) x.get("hoja");
+					Hoja right= (Hoja) e.get("hoja");
+					Hoja hoja= newHoja(Operacion.ADDF,left,right);
+					
+					left.setVal(new Object[]{id,tipo});
+					hoja.setSymbol(sym);
+					
+					if(id==null){
+						Object sym1=CUP$Parser$stack.elementAt(CUP$Parser$top-4);
+						errorAll("Falta identificador.",sym1,SEMANTICO);
+					}
+					if(tipo==null){
+						Object sym1=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+						errorAll("Falta tipo.",sym1,SEMANTICO);
+					}
+					RESULT=new Attr("hoja",hoja);
+				:}
+				;
+bd_addf_val	::=	COMA expr:x		{:RESULT=x;:}
+				|				{:RESULT=new Attr();:}
+				;
+bd_type		::=	KW_INTEGER	{:RESULT=new Attr("tipo",INTEGER);:}
+				|KW_STRING	{:RESULT=new Attr("tipo",STRING);:}
+				|KW_CHAR	{:RESULT=new Attr("tipo",CHAR);:}
+				|KW_FLOAT	{:RESULT=new Attr("tipo",FLOAT);:}
+				|KW_BOOLEAN	{:RESULT=new Attr("tipo",BOOLEAN);:}
+				|KW_LONG	{:RESULT=new Attr("tipo",LONG);:}
+				|error		{:error("Se esperaba un tipo.",null,SINTACTICO); RESULT=new Attr();:}
+				;
+				
+/*************************/				
+bc			::=	BC bc_body:x	{:RESULT=x;:}
+				;
+bc_body		::=	bc_list:x		{:RESULT=x;:}
+				|				{:RESULT=new Attr();:}
+				;
+bc_list		::=	bc_list:l bc_item:x
+				{:
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.STMT,left,right);
+					
+					RESULT=new Attr("hoja",hoja);
+				:}
+				|bc_item:x		{:RESULT=x;:}
+				;
+bc_item		::=	bc_crear_imagen:x		{:RESULT=x;:}	
+				|bc_crear_potencia:x	{:RESULT=x;:}
+				|bc_crear_arma:x		{:RESULT=x;:}
+				|bc_crear_enemigo:x		{:RESULT=x;:}	
+				|bc_crear_estrategia:x	{:RESULT=x;:}
+				|error					{:error("Se esperaba crear algo.",null,SINTACTICO);RESULT=new Attr();:}
+				;
+bc_crear_imagen		::=	CREAR_IMAGEN P1 int:x COMA string:n COMA string:r P2
+						{:
+							Integer id=x.getInt("val");
+							String nombre=n.getString("val");
+							String ruta=r.getString("val");
+							
+							
+							Hoja left=null;
+							Hoja right=null;
+							Hoja hoja=newHoja(Operacion.CREAR_IMAGEN,left,right);
+							
+							Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-7);
+							hoja.setVal(new Object[]{id,nombre,ruta});
+							hoja.setSymbol(sym);
+							
+							RESULT=new Attr("hoja",hoja);
+							
+						:}
+						;
+bc_crear_potencia	::= CREAR_POTENCIA P1 int:x COMA bc_crear_potencia_nivel:n P2
+						{:
+							Integer id=x.getInt("val");
+							Enemigos.Nivel nivel=(Enemigos.Nivel)n.get("nivel");
+							
+							Hoja left=null;
+							Hoja right=null;
+							Hoja hoja=newHoja(Operacion.CREAR_POTENCIA,left,right);
+							
+							Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-5);
+							hoja.setVal(new Object[]{id,nivel});
+							hoja.setSymbol(sym);
+							
+							RESULT=new Attr("hoja",hoja);
+						:}
+						;
+bc_crear_potencia_nivel	::=	TINNY		{:RESULT=new Attr("nivel",Enemigos.Nivel.TINNY);:}
+							|LOW		{:RESULT=new Attr("nivel",Enemigos.Nivel.LOW);:}
+							|MEDIUM		{:RESULT=new Attr("nivel",Enemigos.Nivel.MEDIUM);:}
+							|HIGHT		{:RESULT=new Attr("nivel",Enemigos.Nivel.HIGHT);:}
+							|HEAVY		{:RESULT=new Attr("nivel",Enemigos.Nivel.HEAVY);:}
+							|error		{:error("Se esperaba un nivel de potencia.",null,SINTACTICO);RESULT=new Attr();:}
+							;
+bc_crear_arma		::=	CREAR_ARMA P1 int:x COMA string:n COMA int:i1 COMA int:i2 COMA int:i3 P2
+						{:
+							Integer id=x.getInt("val");
+							String nombre=n.getString("val");
+							Integer min=i1.getInt("val");
+							Integer max=i2.getInt("val");
+							Integer no=i3.getInt("val");
+							
+							Hoja left=null;
+							Hoja right=null;
+							Hoja hoja=newHoja(Operacion.CREAR_ARMA,left,right);
+							
+							Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-11);
+							hoja.setVal(new Object[]{id,nombre,min,max,no});
+							hoja.setSymbol(sym);
+							
+							RESULT=new Attr("hoja",hoja);
+						:}
+						;
+bc_crear_enemigo	::=	CREAR_ENEMIGO P1 int:x COMA string:n COMA int:i1 COMA int:i2 P2
+						{:
+							Integer id=x.getInt("val");
+							String nombre=n.getString("val");
+							Integer potencia=i1.getInt("val");
+							Integer imagen=i2.getInt("val");
+							
+							Hoja left=null;
+							Hoja right=null;
+							Hoja hoja=newHoja(Operacion.CREAR_ENEMIGO,left,right);
+							
+							Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-9);
+							hoja.setVal(new Object[]{id,nombre,potencia,imagen});
+							hoja.setSymbol(sym);
+							
+							RESULT=new Attr("hoja",hoja);
+							
+						:}
+						;
+bc_crear_estrategia	::=	CREAR_ESTRATEGIA P1 int:x COMA string:n COMA int:i1 P2
+						{:
+							Integer id=x.getInt("val");
+							String nombre=n.getString("val");
+							Integer punteo=i1.getInt("val");
+							
+							Hoja left=null;
+							Hoja right=null;
+							Hoja hoja=newHoja(Operacion.CREAR_ESTRATEGIA,left,right);
+							
+							Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-7);
+							hoja.setVal(new Object[]{id,nombre,punteo});
+							hoja.setSymbol(sym);
+							
+							RESULT=new Attr("hoja",hoja);
+						:}
+						;
+				
+/*************************/				
+be			::=	BE be_body:x	{:RESULT=x;:}
+				;
+be_body		::=	be_list:x		{:RESULT=x;:}
+				|				{:RESULT=new Attr();:}
+				;
+be_list		::=	be_list:l be_item:x
+				{:
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.STMT,left,right);
+					
+					RESULT=new Attr("hoja",hoja);
+				:}
+				|be_item:x	{:RESULT=x;:}
+				;
+be_item		::=	be_stmt:x	{:RESULT=x;:}
+				|error		{:errorAll("Se esperaba sentencia.",null,SINTACTICO);RESULT=new Attr();:}
+				;
+be_while	::=	MIENTRAS expr:e be_while_body:s FIN_MIENTRAS
+				{:
+					Hoja left=(Hoja)e.get("hoja");
+					Hoja right=(Hoja)s.get("hoja");
+					Hoja hoja= newHoja(Operacion.WHILE,left,right);
+					
+					RESULT=new Attr("hoja",hoja);
+				:}
+				;
+be_while_body	::=	be_while_list:x	{:RESULT=x;:}	
+					|				{:RESULT=new Attr();:}
+					;
+be_while_list	::=	be_while_list:l be_while_item:x
+					{:
+						Hoja left=(Hoja)l.get("hoja");
+						Hoja right=(Hoja)x.get("hoja");
+						Hoja hoja=newHoja(Operacion.STMT,left,right);
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|be_while_item:x	{:RESULT=x;:}
+					;
+be_while_item	::=	be_stmt:x			{:RESULT=x;:}
+					|DETENER
+					{:
+						Hoja left=null;
+						Hoja right=null;
+						RESULT=new Attr("hoja",newHoja(Operacion.WHILE_STOP,left,right));
+					:}
+					|PAUSAR P1 expr:t P2	
+					{:
+						Hoja left=(Hoja)t.get("hoja");
+						Hoja hoja=newHoja(Operacion.WHILE_PAUSE,left,null);
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|error					{:errorAll("Se esperaba un sentencia.",null,SINTACTICO);RESULT=new Attr();:}
+					;
+be_for		::=	PARA id:x EQUAL expr:e1 COMA be_for1:t P1 id:v P2 EQUAL expr:e2 HACER be_for_body:s FIN_PARA
+				{:
+					
+					Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-13);
+					
+					String nombre=x.getString("val");
+					Tipo tipo=Tipo.INTEGER;
+					
+					//inicializar la variable setf
+					Hoja varl= newHoja(new Object[]{nombre,tipo},tipo,x.get("sym"));
+					Hoja varr= (Hoja) e1.get("hoja");
+					Hoja var= newHoja(Operacion.SETF,varl,varr);
+					
+					varl.setVar(true);
+					var.setSymbol(sym);
+					
+					//modificar la variable
+					Hoja setl=varl;
+					Hoja setr=null;
+					Hoja set=newHoja(Operacion.AUMENTAR,setl,setr);
+					
+					String ad=t.getString("val");
+					if(ad.equals("disminuir")){
+						set.setOperacion(Operacion.DISMINUIR);
+					}
+					
+					set.setSymbol(sym);
+					
+					//comparacion
+					Hoja iguall=varl;
+					Hoja igualr=(Hoja)e2.get("hoja");
+					Hoja igual=newHoja(Operacion.NEQUAL,iguall,igualr);
+					
+					igual.setSymbol(sym);
+					
+					//FOR
+					Hoja left=igual;
+					Hoja right= (Hoja)s.get("hoja");
+					Hoja hoja=newHoja(Operacion.FOR,left,right);
+					
+					hoja.setVal(new Object[]{var,set}); 
+					hoja.setSymbol(sym);
+					
+					
+					RESULT=new Attr("hoja",hoja);
+				:}
+				;
+be_for1		::=	AUMENTAR		{:RESULT=new Attr("val","aumentar");:}
+				|DISMINUIR		{:RESULT=new Attr("val","disminuir");:}
+				|error			{:error("Se esperaba 'aumentar' o 'disminuir'.",null,SINTACTICO);RESULT=new Attr();:}
+				;
+be_for_body	::=	be_for_list:x	{:RESULT=x;:}
+				|				{:RESULT=new Attr();:}
+				;
+be_for_list	::=	be_for_list:l be_for_item:x
+				{:
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.STMT,left,right);
+					
+					RESULT=new Attr("hoja",hoja);
+				:}
+				|be_for_item:x	{:RESULT=x;:}
+				;
+be_for_item	::=	be_stmt:x			{:RESULT=x;:}
+				|error				{:error(Error.ERROR_STMT,null,SINTACTICO);RESULT=new Attr();:}
+				;
+be_if		::=	SI be_if_body:x FIN_SI
+				{:
+					Hoja left=null;
+					Hoja right=null;
+					Hoja hoja=newHoja(Operacion.IF,left,right);
+					hoja.setVal(x.get("lista"));
+					
+					Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+					hoja.setSymbol(sym);
+					
+					RESULT=new Attr("hoja",hoja);
+				:}
+				;
+be_if_body	::=	be_if_list:x	{:RESULT=x;:}
+				;
+be_if_list	::=	be_if_list:l OTRO_CASO P1 expr:e P2 be_if_item:x
+				{:
+					
+					Hoja left=(Hoja)e.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.ELSE_IF,left,right);
+					
+					Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
+					hoja.setSymbol(sym);
+					
+					LinkedList<Hoja> lista=(LinkedList<Hoja>)l.get("lista");
+					lista.add(hoja);
+					
+					RESULT=l;
+				:}
+				|be_if_list:l OTRO_CASO be_if_item:x
+				{:
+					
+					Hoja left=(Hoja)x.get("hoja");
+					Hoja right=null;
+					Hoja hoja=newHoja(Operacion.ELSE,left,right);
+					
+					Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-1);
+					hoja.setSymbol(sym);
+					
+					LinkedList<Hoja> lista=(LinkedList<Hoja>)l.get("lista");
+					lista.add(hoja);
+					
+					RESULT=l;
+				:}
+				|expr:e ENTONCES be_if_item:x			
+				{:
+					Hoja left=(Hoja)e.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.ELSE_IF,left,right);
+					
+					LinkedList<Hoja> lista=new LinkedList<>();
+					lista.add(hoja);
+					
+					RESULT=new Attr("lista",lista);
+				:}
+				;
+be_if_item	::=	be_if_item_body:x		{:RESULT=x;:}
+				;
+be_if_item_body	::=	be_if_item_list:x	{:RESULT=x;:}
+					|					{:RESULT=new Attr();:}
+					;
+be_if_item_list	::=	be_if_item_list:l be_if_item_item:x
+					{:
+						Hoja left=(Hoja)l.get("hoja");
+						Hoja right=(Hoja)x.get("hoja");
+						Hoja hoja=newHoja(Operacion.STMT,left,right);
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|be_if_item_item:x	{:RESULT=x;:}
+					;
+be_if_item_item	::=	be_stmt:x			{:RESULT=x;:}
+					|error				{:error("Se esperaba sentencia.",null,SINTACTICO);RESULT=new Attr();:}
+					;
+					
+be_stmt			::=	be_functions:x	{:RESULT=x;:}
+					|be_methods:x	{:RESULT=x;:}
+					|be_while:x		{:RESULT=x;:}
+					|be_for:x		{:RESULT=x;:}
+					|be_if:x		{:RESULT=x;:}
+					|println:x		{:RESULT=x;:}
+					;
+be_functions	::=	FUNC_GET_MUNICIONES P1 expr:i P2
+					{:
+						Hoja left=null;
+						Hoja right=null;
+						Hoja hoja=newHoja(Operacion.GET_LIBRE,left,right);
+						
+						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-7);
+						Hoja enemigo	=(Hoja)i.get("hoja");
+						
+						hoja.setSymbol(sym);
+						hoja.setVal(new Object[]{enemigo});
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|FUNC_GET_LIBRE P1 expr:i COMA expr:i1 COMA expr:i2 P2
+					{:
+						Hoja left=null;
+						Hoja right=null;
+						Hoja hoja=newHoja(Operacion.GET_LIBRE,left,right);
+						
+						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-7);
+						Hoja enemigo	=(Hoja)i.get("hoja");
+						Hoja x			=(Hoja)i1.get("hoja");
+						Hoja y			=(Hoja)i2.get("hoja");
+						
+						hoja.setSymbol(sym);
+						hoja.setVal(new Object[]{enemigo,x,y});
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|FUNC_BORDE_TABLERO P1 expr:i P2
+					{:
+						Hoja left=null;
+						Hoja right=null;
+						Hoja hoja=newHoja(Operacion.BORDE_TABLERO,left,right);
+						
+						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-3);
+						Hoja enemigo	=(Hoja)i.get("hoja");
+						
+						hoja.setSymbol(sym);
+						hoja.setVal(new Object[]{enemigo});
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|FUNC_GET_VAL P1 id:x COMA bd_type:t P2
+					{:
+						String nombre=x.getString("val");
+						Simbolo.Tipo tipo=(Simbolo.Tipo)t.get("tipo");
+						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-5);
+						
+						Hoja left=(Hoja)x.get("hoja");
+						Hoja hoja=newHoja(Operacion.GET_VAL,left,null);
+						
+						left.setVal(new Object[]{nombre,tipo});
+						hoja.setSymbol(sym);
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|FUNC_GET_F P1 id:x COMA bd_type:t P2
+					{:
+						String nombre=x.getString("val");
+						Enemigos.Simbolo.Tipo tipo=(Enemigos.Simbolo.Tipo)t.get("tipo");
+						
+						Hoja left=(Hoja)x.get("hoja");
+						left.setVal(new Object[]{nombre,tipo});
+						left.setTipo(tipo);
+						Hoja hoja=newHoja(Operacion.GET_STR,left,null);
+						
+						/* if(tipo!=null){
+							if(getEnemigos().getSimbolos().contains(nombre,tipo)){
+								Enemigos.Simbolo sim=getEnemigos().getSimbolos().get(nombre,tipo);
+								Object val=getEnemigos().getPila().get(sim.getPosicion(),sim.getTamanio());
+								left.setVar(false);
+								left.setVal(val);
+								left.setTipo(tipo);
+							} else{
+								errorAll(compiler.Error.ERROR_VAR_NO_EXISTE,x.get("sym"),SEMANTICO);
+								hoja=null;
+							}
+						} */
+						
+						x.clear();
+						x.set("hoja",hoja);
+						
+						RESULT=x;
+					:}
+					|FUNC_GET_BOOL P1 expr:e P2
+					{:
+						Hoja left=(Hoja)e.get("hoja");
+						Hoja hoja=newHoja(Operacion.GET_BOOL,left,null);
+						
+						e.clear();
+						e.set("hoja",hoja);
+						
+						RESULT=e;
+					:}
+					|FUNC_GET_STR P1 expr:e P2
+					{:
+						Hoja left=(Hoja)e.get("hoja");
+						Hoja hoja=newHoja(Operacion.GET_STR,left,null);
+						
+						e.clear();
+						e.set("hoja",hoja);
+						
+						RESULT=e;
+					:}
+					|FUNC_GET_INT P1 expr:e P2
+					{:
+						Hoja left=(Hoja)e.get("hoja");
+						Hoja hoja=newHoja(Operacion.GET_INT,left,null);
+						
+						e.clear();
+						e.set("hoja",hoja);
+						
+						RESULT=e;
+					:}
+					|AUMENTAR P1 id:x COMA bd_type:t P2
+					{:
+						String nombre=x.getString("val");
+						Tipo tipo=(Tipo)t.get("tipo");
+						
+						Hoja left=(Hoja)x.get("hoja");
+						Hoja right=null;
+						Hoja hoja=newHoja(Operacion.AUMENTAR,left,right);
+						
+						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-5);
+						hoja.setSymbol(sym);
+						left.setVal(new Object[]{nombre,tipo});
+						left.setTipo(tipo);
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|DISMINUIR P1 id:x COMA bd_type:t P2
+					{:
+						String nombre=x.getString("val");
+						Tipo tipo=(Tipo)t.get("tipo");
+						
+						Hoja left=(Hoja)x.get("hoja");
+						Hoja right=null;
+						Hoja hoja=newHoja(Operacion.DISMINUIR,left,right);
+						
+						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-5);
+						hoja.setSymbol(sym);
+						left.setVal(new Object[]{nombre,tipo});
+						left.setTipo(tipo);
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|FUNC_ARMA_PROPIA P1 expr:i COMA expr:i1 P2
+					{:
+						Hoja left=null;
+						Hoja right=null;
+						Hoja hoja=newHoja(Operacion.ARMA_PROPIA,left,right);
+						
+						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-5);
+						Hoja enemigo	=(Hoja)i.get("hoja");
+						Hoja arma		=(Hoja)i1.get("hoja");
+						
+						hoja.setSymbol(sym);
+						hoja.setVal(new Object[]{enemigo,arma});
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					;
+be_methods		::=	PROC_ASIGNAR_ARMA P1 expr:i COMA expr:i1 P2
+					{:
+						Hoja left=null;
+						Hoja right=null;
+						Hoja hoja=newHoja(Operacion.ASIGNAR_ARMA,left,right);
+						
+						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-5);
+						Hoja enemigo	=(Hoja)i.get("hoja");
+						Hoja arma		=(Hoja)i1.get("hoja");
+						
+						hoja.setSymbol(sym);
+						hoja.setVal(new Object[]{enemigo,arma});
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|PROC_ASIGNAR_PASO P1 expr:i COMA expr:i1 COMA expr:i2 COMA expr:i3 COMA expr:i4 P2
+					{:
+						Hoja left=null;
+						Hoja right=null;
+						Hoja hoja=newHoja(Operacion.ASIGNAR_PASO,left,right);
+						
+						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-11);
+						Hoja estrategia	=(Hoja)i.get("hoja");
+						Hoja enemigo	=(Hoja)i1.get("hoja");
+						Hoja x			=(Hoja)i2.get("hoja");
+						Hoja y			=(Hoja)i3.get("hoja");
+						Hoja movimiento	=(Hoja)i4.get("hoja");
+						
+						hoja.setSymbol(sym);
+						hoja.setVal(new Object[]{estrategia,enemigo,x,y,movimiento});
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|PROC_ASIGNAR_SALTO P1 expr:i COMA expr:i1 COMA expr:i2 COMA expr:i3 P2
+					{:
+						Hoja left=null;
+						Hoja right=null;
+						Hoja hoja=newHoja(Operacion.ASIGNAR_SALTO,left,right);
+						
+						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-7);
+						Hoja estrategia	=(Hoja)i.get("hoja");
+						Hoja enemigo	=(Hoja)i1.get("hoja");
+						Hoja x			=(Hoja)i2.get("hoja");
+						Hoja y			=(Hoja)i3.get("hoja");
+						
+						hoja.setSymbol(sym);
+						hoja.setVal(new Object[]{estrategia,enemigo,x,y});
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|PROC_AVANZAR P1 expr:i COMA expr:i1 COMA expr:i2 P2
+					{:
+						Hoja left=null;
+						Hoja right=null;
+						Hoja hoja=newHoja(Operacion.ASIGNAR_SALTO,left,right);
+						
+						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-10);
+						Hoja estrategia	=(Hoja)i.get("hoja");
+						Hoja enemigo	=(Hoja)i1.get("hoja");
+						Hoja pasos		=(Hoja)i2.get("hoja");
+						
+						hoja.setSymbol(sym);
+						hoja.setVal(new Object[]{estrategia,enemigo,pasos});
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|PROC_GIRAR P1 expr:i COMA expr:i1 COMA expr:i2 P2
+					{:
+						Hoja left=null;
+						Hoja right=null;
+						Hoja hoja=newHoja(Operacion.GIRAR,left,right);
+						
+						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-7);
+						Hoja estrategia	=(Hoja)i.get("hoja");
+						Hoja enemigo	=(Hoja)i1.get("hoja");
+						Hoja orientacion=(Hoja)i2.get("hoja");
+						
+						hoja.setSymbol(sym);
+						hoja.setVal(new Object[]{estrategia,enemigo,orientacion});
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|PROC_ASIGNAR_HABILIDAD P1 expr:i COMA expr:i1 COMA expr:i2 COMA expr:i3 P2
+					{:
+						Hoja left=null;
+						Hoja right=null;
+						Hoja hoja=newHoja(Operacion.ASIGNAR_HABILIDAD,left,right);
+						
+						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-9);
+						Hoja estrategia		=(Hoja)i.get("hoja");
+						Hoja enemigo		=(Hoja)i1.get("hoja");
+						Hoja arma			=(Hoja)i2.get("hoja");
+						Hoja detonaciones	=(Hoja)i3.get("hoja");
+						
+						hoja.setSymbol(sym);
+						hoja.setVal(new Object[]{estrategia,enemigo,arma,detonaciones});
+						
+						RESULT=new Attr("hoja",hoja);
+					:}
+					|PROC_SETF	P1 id:x COMA bd_type:t COMA expr:e P2
+					{:
+						String nombre=x.getString("val");
+						Enemigos.Simbolo.Tipo tipo=(Enemigos.Simbolo.Tipo)t.get("tipo");
+						
+						Hoja left=newHoja(new Object[]{nombre,tipo},tipo,x.get("sym"));
+						Hoja right=(Hoja)e.get("hoja");
+						Hoja hoja=newHoja(Operacion.SETF,left,right);
+						
+						
+						left.setVar(true);
+						x.set("hoja",hoja);
+						
+						RESULT=x;
+					:}
+					;
+println			::=	PROC_PRINTLN P1 expr:e P2
+					{:
+						Hoja left=(Hoja)e.get("hoja");
+						Hoja right=null;
+						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-3);
+						Hoja hoja=newHoja(Operacion.PRINTLN,left,right);
+						hoja.setSymbol(sym);
+						RESULT=new Attr("hoja",hoja);
+					:}
+					;
+
+/*************************/
+expr		::=	expr:l XOR expr1:x
+				{:
+					
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.XOR,left,right);
+					
+					Boolean b1=l.getBoolean("there's var");
+					Boolean b2=x.getBoolean("there's var");
+					boolean b=(b1==null?false:b1)||(b2==null?false:b2);
+					
+					l.clear();
+					l.set("there's var",b);
+					l.set("hoja",hoja);
+					
+					RESULT=l;
+				:}
+				|expr1:x	{:RESULT=x;:}
+				;
+expr1		::= expr1:l OR expr2:x
+				{:
+					
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.OR,left,right);
+					
+					Boolean b1=l.getBoolean("there's var");
+					Boolean b2=x.getBoolean("there's var");
+					boolean b=(b1==null?false:b1)||(b2==null?false:b2);
+					
+					l.clear();
+					l.set("there's var",b);
+					l.set("hoja",hoja);
+					
+					RESULT=l;
+				:}
+				|expr2:x	{:RESULT=x;:}
+				;
+expr2		::=	expr2:l AND expr3:x
+				{:
+					
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.AND,left,right);
+					
+					Boolean b1=l.getBoolean("there's var");
+					Boolean b2=x.getBoolean("there's var");
+					boolean b=(b1==null?false:b1)||(b2==null?false:b2);
+					
+					l.clear();
+					l.set("there's var",b);
+					l.set("hoja",hoja);
+					
+					RESULT=l;
+				:}
+				|expr3:x	{:RESULT=x;:}
+				;
+expr3		::=	NOT expr4:x
+				{:
+					
+					Hoja left=(Hoja)x.get("hoja");
+					Hoja right=null;
+					Hoja hoja=newHoja(Operacion.NOT,left,right);
+					
+					Boolean b1=x.getBoolean("there's var");
+					boolean b=(b1==null?false:b1);
+					
+					x.clear();
+					x.set("there's var",b);
+					x.set("hoja",hoja);
+					
+					RESULT=x;
+				:}
+				|expr4:x	{:RESULT=x;:}
+				;
+expr4		::=	expr4:l	EQUAL	expr5:x
+				{:
+					
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.EQUAL,left,right);
+					
+					l.clear();
+					l.set("hoja",hoja);
+					
+					RESULT=l;
+				:}
+				|expr4:l	NEQUAL	expr5:x
+				{:
+					
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.NEQUAL,left,right);
+					
+					Boolean b1=l.getBoolean("there's var");
+					Boolean b2=x.getBoolean("there's var");
+					boolean b=(b1==null?false:b1)||(b2==null?false:b2);
+					
+					l.clear();
+					l.set("there's var",b);
+					l.set("hoja",hoja);
+					
+					RESULT=l;
+				:}
+				|expr4:l	BTHAN 	expr5:x
+				{:
+					
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.BTHAN,left,right);
+					
+					Boolean b1=l.getBoolean("there's var");
+					Boolean b2=x.getBoolean("there's var");
+					boolean b=(b1==null?false:b1)||(b2==null?false:b2);
+					
+					l.clear();
+					l.set("there's var",b);
+					l.set("hoja",hoja);
+					
+					RESULT=l;
+				:}
+				|expr4:l	BETHAN 	expr5:x
+				{:
+					
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.BETHAN,left,right);
+					
+					Boolean b1=l.getBoolean("there's var");
+					Boolean b2=x.getBoolean("there's var");
+					boolean b=(b1==null?false:b1)||(b2==null?false:b2);
+					
+					l.clear();
+					l.set("there's var",b);
+					l.set("hoja",hoja);
+					
+					RESULT=l;
+				:}
+				|expr4:l	LTHAN 	expr5:x
+				{:
+					
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.LTHAN,left,right);
+					
+					Boolean b1=l.getBoolean("there's var");
+					Boolean b2=x.getBoolean("there's var");
+					boolean b=(b1==null?false:b1)||(b2==null?false:b2);
+					
+					l.clear();
+					l.set("there's var",b);
+					l.set("hoja",hoja);
+					
+					RESULT=l;
+				:}
+				|expr4:l	LETHAN 	expr5:x
+				{:
+					
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(Operacion.LETHAN,left,right);
+					
+					Boolean b1=l.getBoolean("there's var");
+					Boolean b2=x.getBoolean("there's var");
+					boolean b=(b1==null?false:b1)||(b2==null?false:b2);
+					
+					l.clear();
+					l.set("there's var",b);
+					l.set("hoja",hoja);
+					
+					RESULT=l;
+				:}
+				|expr5:x	{:RESULT=x;:}
+				;
+expr5		::=	ENULL expr6:x
+				{:
+					
+					Hoja left=(Hoja)x.get("hoja");
+					Hoja right=null;
+					Hoja hoja=newHoja(Operacion.ENULL,left,right);
+					
+					Boolean b1=x.getBoolean("there's var");
+					boolean b=(b1==null?false:b1);
+					
+					x.clear();
+					x.set("there's var",b);
+					x.set("hoja",hoja);
+					
+					RESULT=x;
+				:}
+				|expr6:x	{:RESULT=x;:}
+				
+				;
+
+expr6		::=	expr6:l MINUS expr7:x
+				{:
+					
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(RESTA,left,right);
+					
+					Boolean b1=l.getBoolean("there's var");
+					Boolean b2=x.getBoolean("there's var");
+					boolean b=(b1==null?false:b1)||(b2==null?false:b2);
+					
+					l.clear();
+					l.set("there's var",b);
+					l.set("hoja",hoja);
+					
+					RESULT=l;
+				:}
+				|expr6:l PLUS expr7:x
+				{:
+					
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(SUMA,left,right);
+					
+					Boolean b1=l.getBoolean("there's var");
+					Boolean b2=x.getBoolean("there's var");
+					boolean b=(b1==null?false:b1)||(b2==null?false:b2);
+					
+					l.clear();
+					l.set("there's var",b);
+					l.set("hoja",hoja);
+					
+					RESULT=l;
+				:}
+				|expr7:x	{:RESULT=x;:}
+				;
+expr7		::=	expr7:l MULTI expr8:x
+				{:
+					
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(MULTIPLICACION,left,right);
+					
+					Boolean b1=l.getBoolean("there's var");
+					Boolean b2=x.getBoolean("there's var");
+					boolean b=(b1==null?false:b1)||(b2==null?false:b2);
+					
+					l.clear();
+					l.set("there's var",b);
+					l.set("hoja",hoja);
+					
+					RESULT=l;
+				:}
+				|expr7:l DIV expr8:x
+				{:
+					
+					Hoja left=(Hoja)l.get("hoja");
+					Hoja right=(Hoja)x.get("hoja");
+					Hoja hoja=newHoja(DIVISION,left,right);
+					
+					
+					Boolean b1=l.getBoolean("there's var");
+					Boolean b2=x.getBoolean("there's var");
+					boolean b=(b1==null?false:b1)||(b2==null?false:b2);
+					
+					l.clear();
+					l.set("there's var",b);
+					l.set("hoja",hoja);
+					
+					RESULT=l;
+				:}
+				|expr8:x			{:RESULT=x;:}
+				;
+
+expr8		::=	int:x				{:RESULT=x;:}
+				|id:x				{:RESULT=x;:}
+				|char:x				{:RESULT=x;:}
+				|float:x			{:RESULT=x;:}
+				|boolean:x			{:RESULT=x;:}
+				|long:x				{:RESULT=x;:}
+				|string:x			{:RESULT=x;:}
+				|be_functions:x		{:RESULT=x;:}
+				|P1 expr:x P2		{:RESULT=x;:}
+				|error			
+				{:
+					error("Se esperaba un valor.",null,SINTACTICO);
+					RESULT=new Attr();
+				:}
+				;
+
+id			::=	ID:x
+				{:
+					Attr a=new Attr();
+					Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top);
+					
+					Hoja hoja=newHoja(x,null,sym);
+					hoja.setVar(true);
+					
+					a.set("isVar",true);
+					a.set("hoja",hoja);
+					a.set("rol",VARIABLE);
+					a.set("val",x);
+					a.set("sym",sym);
+					
+					RESULT=a;
+				:}
+				;
+int			::=	INT:x
+				{:
+					Attr a=new Attr();
+					Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top);
+					Hoja hoja=newHoja(x,INTEGER,sym);
+					
+					a.set("hoja",hoja);
+					a.set("tipo",INTEGER);
+					a.set("val",x);
+					a.set("sym",sym);
+					RESULT=a;
+				:}
+				;
+char		::=	CHAR:x
+				{:
+					Attr a=new Attr();
+					Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top);
+					Hoja hoja=newHoja(x.replaceAll("'",""),CHAR,sym);
+					
+					a.set("hoja",hoja);
+					a.set("tipo",CHAR);
+					a.set("val",x);
+					a.set("sym",sym);
+					RESULT=a;
+				:}
+				;
+boolean		::=	BOOLEAN:x
+				{:
+					Attr a=new Attr();
+					Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top);
+					Hoja hoja=newHoja(x,BOOLEAN,sym);
+					
+					a.set("hoja",hoja);
+					a.set("tipo",BOOLEAN);
+					a.set("val",x);
+					a.set("sym",sym);
+					RESULT=a;
+				:}
+				;
+float		::=	FLOAT:x
+				{:
+					Attr a=new Attr();
+					Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top);
+					Hoja hoja=newHoja(x,FLOAT,sym);
+					
+					a.set("hoja",hoja);
+					a.set("tipo",FLOAT);
+					a.set("val",x);
+					a.set("sym",sym);
+					RESULT=a;
+				:}
+				;
+long		::=	LONG:x
+				{:
+					Attr a=new Attr();
+					Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top);
+					Hoja hoja=newHoja(x,LONG,sym);
+					
+					a.set("hoja",hoja);
+					a.set("tipo",LONG);
+					a.set("val",x);
+					a.set("sym",sym);
+					RESULT=a;
+				:}
+				;
+string		::=	STRING:x
+				{:
+					Attr a=new Attr();
+					Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top);
+					Hoja hoja=newHoja(x,STRING,sym);
+					
+					a.set("hoja",hoja);
+					a.set("tipo",STRING);
+					a.set("val",x);
+					a.set("sym",sym);
+					RESULT=a;
+				:}
+				;
+
