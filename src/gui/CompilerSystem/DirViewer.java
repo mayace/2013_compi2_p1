@@ -591,7 +591,7 @@ public class DirViewer extends javax.swing.JPanel {
   //<editor-fold defaultstate="collapsed" desc="getter and setter">
   public Path getDir() {
     final Path d = dir;
-    
+
     if (!fexists(d)) {
       showMessageDialog("No existe el archivo : " + d.toAbsolutePath().toString(), ERROR_MESSAGE);
       setDir(d);

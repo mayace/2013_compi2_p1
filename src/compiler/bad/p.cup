@@ -18,6 +18,7 @@ import compiler.bad.Enemigos.Operacion;
 import compiler.bad.Enemigos.Simbolo;
 import compiler.bad.Enemigos.Simbolo.Tipo;
 import compiler.bad.Enemigos.Potencia;
+import compiler.bad.Enemigos.Movimiento;
 import compiler.Error;
 
 
@@ -127,7 +128,7 @@ terminal		String	MIENTRAS,FIN_MIENTRAS,DETENER,PAUSAR,PARA,AUMENTAR,DISMINUIR,HA
 						SI,FIN_SI,ENTONCES,OTRO_CASO,SETF,FUNC_GET_MUNICIONES,FUNC_GET_LIBRE,FUNC_BORDE_TABLERO,
 						FUNC_GET_VAL,FUNC_GET_F,FUNC_GET_BOOL,FUNC_GET_STR,FUNC_GET_INT,FUNC_AUMENTAR,
 						FUNC_DISMINUIR,FUNC_ARMA_PROPIA,PROC_ASIGNAR_ARMA,PROC_ASIGNAR_PASO,PROC_ASIGNAR_SALTO,
-						PROC_AVANZAR,PROC_GIRAR,PROC_ASIGNAR_HABILIDAD,PROC_SETF
+						PROC_AVANZAR,PROC_GIRAR,PROC_ASIGNAR_HABILIDAD,PROC_SETF,MOV_LINEAL,MOV_CIRCULAR
 						;
 non terminal	Attr	inicio,id,int,boolean,float,char,long,bad,bad1,bad2,expr,expr1,expr2,expr3,
 						expr4,expr5,expr6,expr7,expr8,string,println
@@ -140,7 +141,7 @@ non terminal	Attr	bc,bc_body,bc_list,bc_item,bc_crear_imagen,bc_crear_potencia,b
 non terminal	Attr	be,be_body,be_list,be_item,be_while,be_while_body,be_while_list,be_while_item,
 						be_for,be_for_body,be_for_list,be_for_item,be_if,be_if_body,be_if_list,be_if_item,
 						be_if_item_body,be_if_item_list,be_if_item_item,be_elseif,be_stmt,be_functions,
-						be_methods,be_setf,be_for1
+						be_methods,be_setf,be_for1,be_paso
 						;
 						
 /****************************************************************************************/
@@ -737,7 +738,7 @@ be_methods		::=	PROC_ASIGNAR_ARMA P1 expr:i COMA expr:i1 P2
 						
 						RESULT=new Attr("hoja",hoja);
 					:}
-					|PROC_ASIGNAR_PASO P1 expr:i COMA expr:i1 COMA expr:i2 COMA expr:i3 COMA expr:i4 P2
+					|PROC_ASIGNAR_PASO P1 expr:i COMA expr:i1 COMA expr:i2 COMA expr:i3 COMA be_paso:i4 P2
 					{:
 						Hoja left=null;
 						Hoja right=null;
@@ -748,7 +749,7 @@ be_methods		::=	PROC_ASIGNAR_ARMA P1 expr:i COMA expr:i1 P2
 						Hoja enemigo	=(Hoja)i1.get("hoja");
 						Hoja x			=(Hoja)i2.get("hoja");
 						Hoja y			=(Hoja)i3.get("hoja");
-						Hoja movimiento	=(Hoja)i4.get("hoja");
+						Movimiento movimiento	=(Movimiento)i4.get("movimiento");
 						
 						hoja.setSymbol(sym);
 						hoja.setVal(new Object[]{estrategia,enemigo,x,y,movimiento});
@@ -836,6 +837,10 @@ be_methods		::=	PROC_ASIGNAR_ARMA P1 expr:i COMA expr:i1 P2
 						
 						RESULT=x;
 					:}
+					;
+be_paso			::=	MOV_LINEAL		{:RESULT=new Attr("movimiento",Movimiento.CIRCULAR);:}
+					|MOV_CIRCULAR	{:RESULT=new Attr("movimiento",Movimiento.CIRCULAR);:}
+					|error			{:error("Se esperaba un tipo de movimiento.",null,SINTACTICO);RESULT=new Attr();:}
 					;
 println			::=	PROC_PRINTLN P1 expr:e P2
 					{:

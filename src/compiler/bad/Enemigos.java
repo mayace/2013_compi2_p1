@@ -2,20 +2,12 @@ package compiler.bad;
 
 import compiler.Error;
 import compiler.bad.Enemigos.Simbolo.Tipo;
+import java.awt.Point;
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java_cup.runtime.Symbol;
-import org.fusesource.jansi.Ansi;
-import org.fusesource.jansi.Ansi.Color;
-import org.fusesource.jansi.AnsiConsole;
 
 public class Enemigos {
 
@@ -598,6 +590,10 @@ public class Enemigos {
         sin_hojas.add(Operacion.CREAR_ESTRATEGIA);
         sin_hojas.add(Operacion.CREAR_IMAGEN);
         sin_hojas.add(Operacion.CREAR_POTENCIA);
+        sin_hojas.add(Operacion.ASIGNAR_ARMA);
+        sin_hojas.add(Operacion.ASIGNAR_PASO);
+        sin_hojas.add(Operacion.ASIGNAR_HABILIDAD);
+        sin_hojas.add(Operacion.ASIGNAR_SALTO);
       }
       return sin_hojas;
     }
@@ -740,6 +736,24 @@ public class Enemigos {
           break;
         case DISMINUIR:
           setVal(disminuir(l));
+          break;
+        case ASIGNAR_ARMA:
+          asignar_arma();
+          break;
+        case ASIGNAR_PASO:
+          asignar_paso();
+          break;
+        case ASIGNAR_SALTO:
+          asignar_salto();
+          break;
+        case ASIGNAR_HABILIDAD:
+          asignar_habilidad();
+          break;
+        case AVANZAR:
+          avanzar();
+          break;
+        case GIRAR:
+          girar();
           break;
         default:
           throw new AssertionError(oper.name());
@@ -1150,6 +1164,151 @@ public class Enemigos {
       }
       
     }
+
+    private void asignar_arma() {
+      try {
+        Object temp = getVal();
+        if (temp instanceof Object[]) {
+          Object[] val = (Object[]) temp;
+          Hoja h1 = (Hoja) val[0];
+          Hoja h2 = (Hoja) val[1];
+          
+          h1.exec();
+          h2.exec();
+          
+          Integer i1 = getInteger(h1.getVal());
+          Integer id2 = getInteger(h2.getVal());
+          Enemigo enemigo = getEnemigo(i1);
+          Arma arma = getArma(id2);
+          
+          enemigo.addArmas(id2);
+          System.err.println("arma asignada");
+        }
+      } catch (NullPointerException | NumberFormatException exce) {
+        error(exce, this);
+      }
+    }
+
+    private void asignar_paso() {
+      try {
+        Object[] array = getValArray(getVal());
+        
+        Hoja i1 = (Hoja) array[0];
+        Hoja i2 = (Hoja) array[1];
+        Hoja i3 = (Hoja) array[2];
+        Hoja i4 = (Hoja) array[3];
+        Movimiento i5 = (Movimiento) array[4];
+        
+        i1.exec();
+        i2.exec();
+        i3.exec();
+        i4.exec();
+        
+        final int id1 = getInteger(i1.getVal());
+        final int id2 = getInteger(i2.getVal());
+        
+        Estrategia estrategia = getEstrategia(id1);
+        Enemigo enemigo = getEnemigo(id2);
+        int x = getInteger(i3.getVal());
+        int y = getInteger(i4.getVal());
+        Point p = new Point(x, y);
+        Paso paso = new Paso(id1, id2, p, i5);
+      } catch (Exception e) {
+        error(e, this);
+      }
+      
+    }
+
+    private Object[] getValArray(Object val)throws UnsupportedOperationException{
+      if (val instanceof Object[]) {
+        Object[] array = (Object[]) val;
+        return array;
+      }
+      throw new UnsupportedOperationException("No es array");
+    }
+
+    private void asignar_salto() {
+      try {
+        Object[] array = getValArray(getVal());
+        
+        Hoja i1=(Hoja) array[0];
+        Hoja i2=(Hoja) array[1];
+        Hoja i3=(Hoja) array[2];
+        Hoja i4=(Hoja) array[3];
+        
+        i1.exec();
+        i2.exec();
+        i3.exec();
+        i4.exec();
+        
+        int id1=getInteger(i1.getVal());
+        int id2=getInteger(i2.getVal());
+        int x=getInteger(i3.getVal());
+        int y=getInteger(i4.getVal());
+        
+        getEstrategia(id1);
+        getEnemigo(id2);
+        Point destino = new Point(x, y);
+        
+        Salto salto = new Salto(id1, id2, destino);
+        
+      } catch (Exception e) {
+        error(e, this);
+      }
+    }
+
+    private void asignar_habilidad() {
+      try {
+        Object[] array = getValArray(getVal());
+        
+        Hoja i1=(Hoja) array[0];
+        Hoja i2=(Hoja) array[1];
+        Hoja i3=(Hoja) array[2];
+        Hoja i4=(Hoja) array[3];
+        
+        i1.exec();
+        i2.exec();
+        i3.exec();
+        i4.exec();
+        
+        int id1=getInteger(i1.getVal());
+        int id2=getInteger(i1.getVal());
+        int id3=getInteger(i1.getVal());
+        int detonaciones=getInteger(i1.getVal());
+        
+        
+        
+        
+      } catch (Exception e) {
+        error(e, this);
+      }
+    }
+
+    private void avanzar() {
+      try {
+        Object[] array = getValArray(getVal());
+        
+        Hoja i1 =(Hoja) array[0];
+        Hoja i2 =(Hoja) array[1];
+        Hoja i3 =(Hoja) array[2];
+        
+        i1.exec();
+        i2.exec();
+        i3.exec();
+        
+        int id1=getInteger(i1.getVal());
+        int id2=getInteger(i2.getVal());
+        int pasos=getInteger(i3.getVal());
+        
+      } catch (Exception e) {
+        error(e, this);
+      }
+    }
+
+    private void girar() {
+      throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
   }
 
   public static class Simbolo {
@@ -1400,6 +1559,8 @@ public class Enemigos {
         this.armas.add(i);
       }
     }
+  
+    
   }
 
   public class Estrategia {
@@ -1412,7 +1573,75 @@ public class Enemigos {
       this.punteo = punteo;
     }
   }
+  
+  public class Paso{
+    int estrategia;
+    int enemigo;
+    Point destino;
+    Movimiento movimiento;
+
+    public Paso(int estrategia, int enemigo, Point destino, Movimiento movimiento) {
+      HashMap<Integer, Estrategia> m1 = getEstrategiaMap();
+      HashMap<Integer, Enemigo> m2 = getEnemigoMap();
+      if(!m1.containsKey(estrategia)){
+        throw new NullPointerException("No existe estrategia con id="+estrategia);
+      }
+      if(!m2.containsKey(enemigo)){
+          throw new NullPointerException("No existe enemigo con id="+enemigo);
+      }
+      this.estrategia = estrategia;
+      this.enemigo = enemigo;
+      this.destino = destino;
+      this.movimiento = movimiento;
+    }
+    
+    
+  }
+  
+  public enum Movimiento{CIRCULAR,LINEAL}
+  
+  public class Salto{
+    int estrategia;
+    int enemigo;
+    Point destino;
+
+    public Salto(int estrategia, int enemigo, Point destino) throws NullPointerException{
+      
+      getEstrategia(estrategia);
+      getEnemigo(enemigo);
+      
+      this.estrategia = estrategia;
+      this.enemigo = enemigo;
+      this.destino = destino;
+    }
+    
+  }
+  
+  
+  public class Habilidad{
+    
+    int estrategia;
+    int enemigo;
+    int arma;
+    int detonaciones;
+
+    public Habilidad(int estrategia, int enemigo, int arma, int detonaciones) {
+      getEstrategia(estrategia);
+      getEnemigo(enemigo);
+      getArma(arma);
+      this.estrategia = estrategia;
+      this.enemigo = enemigo;
+      this.arma = arma;
+      this.detonaciones = detonaciones;
+    }
+    
+    
+    
+  }
+  
   //</editor-fold>
+  
+  
   ///sin ordenar...
   private final HashMap<String, HashMap<Integer, ? extends Object>> mapa = new HashMap<>();
 
@@ -1478,6 +1707,35 @@ public class Enemigos {
     getArmaMap().put(id, arma);
   }
 
+  Enemigo getEnemigo(int id)throws NullPointerException{
+    HashMap<Integer, Enemigo> map = getEnemigoMap();
+    
+    if(map.containsKey(id)){
+      return map.get(id);
+    }else{
+      throw new NullPointerException("No existe enemigo con id="+id);
+    }
+  }
+  Arma getArma(int id)throws NullPointerException{
+    HashMap<Integer, Arma> map = getArmaMap();
+    
+    if(map.containsKey(id)){
+      return map.get(id);
+    }else{
+      throw new NullPointerException("No existe arma con id="+id);
+    }
+  }
+  Estrategia getEstrategia(int id)throws NullPointerException{
+    HashMap<Integer, Estrategia> map = getEstrategiaMap();
+    
+    if(map.containsKey(id)){
+      return map.get(id);
+    }
+      throw new NullPointerException("No existe estrategia con id="+id);
+  }
+  
+  
+  
   public enum Operacion {
 
     SUMA, RESTA, MULTIPLICACION, DIVISION, EQUAL, LTHAN, LETHAN,

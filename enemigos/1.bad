@@ -1,0 +1,6 @@
+BD:
+BC:
+crearArma(1,"d",10,0,10)
+BE:
+
+asignarPaso(1,1,0,0,lineal)

@@ -101,12 +101,12 @@ SIMPLE_COMMENT	=	"--"[^\*\n\r]*{NEWLINE}
 	"*"				{return symbol(Sym.MULTI);}
 	"/"				{return symbol(Sym.DIV);}
 	
-	"String"		{return symbol(Sym.KW_STRING);}
-	"Boolean"		{return symbol(Sym.KW_BOOLEAN);}
-	"Integer"		{return symbol(Sym.KW_INTEGER);}
-	"Long"			{return symbol(Sym.KW_LONG);}
-	"Float"			{return symbol(Sym.KW_FLOAT);}
-	"Char"			{return symbol(Sym.KW_CHAR);}
+	"string"		{return symbol(Sym.KW_STRING);}
+	"boolean"		{return symbol(Sym.KW_BOOLEAN);}
+	"integer"		{return symbol(Sym.KW_INTEGER);}
+	"long"			{return symbol(Sym.KW_LONG);}
+	"float"			{return symbol(Sym.KW_FLOAT);}
+	"char"			{return symbol(Sym.KW_CHAR);}
 	
 	
 	
@@ -154,6 +154,10 @@ SIMPLE_COMMENT	=	"--"[^\*\n\r]*{NEWLINE}
 	"avanzar"			{return symbol(Sym.PROC_AVANZAR);}
 	"girar"				{return symbol(Sym.PROC_GIRAR);}
 	"println"			{return symbol(Sym.PROC_PRINTLN);}
+
+
+	"circular"			{return symbol(Sym.MOV_CIRCULAR);}
+	"lineal"			{return symbol(Sym.MOV_LINEAL);}
 	
 	
 	
