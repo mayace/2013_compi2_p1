@@ -1,0 +1,9 @@
+Iniciar Personaje
+	CE:Nombre
+	100:Vida
+	10:Fuerza
+	100:Magia
+	10:Fuerza_Magica
+	10:Costo_Magico
+	"ext/psj/car3.png":Imagen
+Finalizar Personaje

@@ -21,6 +21,7 @@ public class Estructura extends HashMap<Point, Estructura.Casilla> {
 
   private String nombre;
   private Dimension tamanio;
+  
 
   public Estructura(String nombre, Dimension tamanio) {
     this.nombre = nombre;
@@ -36,6 +37,12 @@ public class Estructura extends HashMap<Point, Estructura.Casilla> {
   public Casilla addCasilla(Casilla casilla) throws ArrayIndexOutOfBoundsException {
     Point key = getKey(casilla.getPunto());
     if (containsKey(key)) {
+      if(casilla.getTipo().getInicio()){
+        inicio=casilla;
+      }
+      if(casilla.getTipo().getFin()){
+        fin=casilla;
+      }
       return super.put(key, casilla);
     } else {
       throw new ArrayIndexOutOfBoundsException("No existe el punto para la casilla...");
@@ -108,4 +115,18 @@ public class Estructura extends HashMap<Point, Estructura.Casilla> {
       this.punto = punto;
     }
   }
+
+
+  Casilla fin=null;
+  Casilla inicio=null;
+
+  public Casilla getFin() {
+    return fin;
+  }
+
+  public Casilla getInicio() {
+    return inicio;
+  }
+  
+  
 }

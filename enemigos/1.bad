@@ -1,6 +1,29 @@
 BD:
+
+addf(i,integer)
+
 BC:
-crearArma(1,"d",10,0,10)
+--- DEFINICION: crearPotencia(id,nombre,direccion)
+crearImagen(1,"virus","ext/psj/virus.png")
+
+--- DEFINICION: crearPotencia(id_potencia,nivel)
+crearPotencia(1,Tinny)
+crearPotencia(2,Low)
+crearPotencia(3,Medium)
+crearPotencia(4,Hight)
+crearPotencia(5,Heavy)
+
+--- DEFINICION: crearArma(id,nombre,max,min,no_municiones)
+crearArma(1,"WaterCase",10,0,10)
+
+--- DEFINICION: crearEnemigo(id,nombre,id_potencia,id_imagen)
+crearEnemigo(1,"General",5,1)
+crearEnemigo(2,"General1",5,1)
+
+--- DEFINICION: crearEstrategia(id,nombre,punteo)
+crearEstrategia(1,"Evasion",0)
+
 BE:
 
-asignarPaso(1,1,0,0,lineal)
+--asignarArma(1,1)
+println(getLibre(1,1,1))

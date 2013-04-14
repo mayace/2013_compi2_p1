@@ -4,7 +4,28 @@
  */
 package gui.escenario;
 
+import compiler.bad.Enemigos;
+import compiler.lvl.Espacio;
+import compiler.lvl.Estructura;
+import compiler.psj.Personaje;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Point;
 import java.awt.event.KeyEvent;
+import java.awt.font.TextAttribute;
+import java.io.File;
+import java.util.LinkedList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingWorker;
+import javax.swing.border.LineBorder;
+import javax.swing.border.TitledBorder;
 
 /**
  *
@@ -17,6 +38,7 @@ public class Win extends javax.swing.JFrame {
    */
   public Win() {
     initComponents();
+    init();
   }
 
   /**
@@ -28,41 +50,13 @@ public class Win extends javax.swing.JFrame {
   // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
   private void initComponents() {
 
-    jDialog1 = new javax.swing.JDialog();
-    escenario = new gui.escenario.Escenario();
-    menuBar = new javax.swing.JMenuBar();
-    fileMenu = new javax.swing.JMenu();
-    openMenuItem = new javax.swing.JMenuItem();
-    saveMenuItem = new javax.swing.JMenuItem();
-    saveAsMenuItem = new javax.swing.JMenuItem();
-    exitMenuItem = new javax.swing.JMenuItem();
-    editMenu = new javax.swing.JMenu();
-    cutMenuItem = new javax.swing.JMenuItem();
-    copyMenuItem = new javax.swing.JMenuItem();
-    pasteMenuItem = new javax.swing.JMenuItem();
-    deleteMenuItem = new javax.swing.JMenuItem();
-    helpMenu = new javax.swing.JMenu();
-    contentsMenuItem = new javax.swing.JMenuItem();
-    aboutMenuItem = new javax.swing.JMenuItem();
-
-    javax.swing.GroupLayout jDialog1Layout = new javax.swing.GroupLayout(jDialog1.getContentPane());
-    jDialog1.getContentPane().setLayout(jDialog1Layout);
-    jDialog1Layout.setHorizontalGroup(
-      jDialog1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addGap(0, 400, Short.MAX_VALUE)
-    );
-    jDialog1Layout.setVerticalGroup(
-      jDialog1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addGap(0, 300, Short.MAX_VALUE)
-    );
-
     setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-    escenario.setFocusable(true);
+    top.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Nivel N", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Manteka", 0, 24))); // NOI18N
+    top.setLayout(new javax.swing.BoxLayout(top, javax.swing.BoxLayout.LINE_AXIS));
+    getContentPane().add(top, java.awt.BorderLayout.PAGE_START);
+
     escenario.addKeyListener(new java.awt.event.KeyAdapter() {
-      public void keyTyped(java.awt.event.KeyEvent evt) {
-        escenarioKeyTyped(evt);
-      }
       public void keyPressed(java.awt.event.KeyEvent evt) {
         escenarioKeyPressed(evt);
       }
@@ -72,90 +66,22 @@ public class Win extends javax.swing.JFrame {
     escenario.setLayout(escenarioLayout);
     escenarioLayout.setHorizontalGroup(
       escenarioLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addGap(0, 396, Short.MAX_VALUE)
+      .addGap(0, 526, Short.MAX_VALUE)
     );
     escenarioLayout.setVerticalGroup(
       escenarioLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addGap(0, 275, Short.MAX_VALUE)
+      .addGap(0, 306, Short.MAX_VALUE)
     );
 
     getContentPane().add(escenario, java.awt.BorderLayout.CENTER);
-
-    fileMenu.setMnemonic('f');
-    fileMenu.setText("File");
-
-    openMenuItem.setMnemonic('o');
-    openMenuItem.setText("Open");
-    fileMenu.add(openMenuItem);
-
-    saveMenuItem.setMnemonic('s');
-    saveMenuItem.setText("Save");
-    fileMenu.add(saveMenuItem);
-
-    saveAsMenuItem.setMnemonic('a');
-    saveAsMenuItem.setText("Save As ...");
-    saveAsMenuItem.setDisplayedMnemonicIndex(5);
-    fileMenu.add(saveAsMenuItem);
-
-    exitMenuItem.setMnemonic('x');
-    exitMenuItem.setText("Exit");
-    exitMenuItem.addActionListener(new java.awt.event.ActionListener() {
-      public void actionPerformed(java.awt.event.ActionEvent evt) {
-        exitMenuItemActionPerformed(evt);
-      }
-    });
-    fileMenu.add(exitMenuItem);
-
-    menuBar.add(fileMenu);
-
-    editMenu.setMnemonic('e');
-    editMenu.setText("Edit");
-
-    cutMenuItem.setMnemonic('t');
-    cutMenuItem.setText("Cut");
-    editMenu.add(cutMenuItem);
-
-    copyMenuItem.setMnemonic('y');
-    copyMenuItem.setText("Copy");
-    editMenu.add(copyMenuItem);
-
-    pasteMenuItem.setMnemonic('p');
-    pasteMenuItem.setText("Paste");
-    editMenu.add(pasteMenuItem);
-
-    deleteMenuItem.setMnemonic('d');
-    deleteMenuItem.setText("Delete");
-    editMenu.add(deleteMenuItem);
-
-    menuBar.add(editMenu);
-
-    helpMenu.setMnemonic('h');
-    helpMenu.setText("Help");
-
-    contentsMenuItem.setMnemonic('c');
-    contentsMenuItem.setText("Contents");
-    helpMenu.add(contentsMenuItem);
-
-    aboutMenuItem.setMnemonic('a');
-    aboutMenuItem.setText("About");
-    helpMenu.add(aboutMenuItem);
-
-    menuBar.add(helpMenu);
-
-    setJMenuBar(menuBar);
+    escenario.setFocusable(true);
+    escenario.requestFocusInWindow();
 
     pack();
   }// </editor-fold>//GEN-END:initComponents
 
-    private void exitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exitMenuItemActionPerformed
-      System.exit(0);
-    }//GEN-LAST:event_exitMenuItemActionPerformed
-
-  private void escenarioKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_escenarioKeyTyped
-    // TODO add your handling code here:
-  }//GEN-LAST:event_escenarioKeyTyped
-
   private void escenarioKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_escenarioKeyPressed
+    // TODO add your handling code here:
   }//GEN-LAST:event_escenarioKeyPressed
 
   /**
@@ -195,25 +121,185 @@ public class Win extends javax.swing.JFrame {
     });
   }
   // Variables declaration - do not modify//GEN-BEGIN:variables
-  private javax.swing.JMenuItem aboutMenuItem;
-  private javax.swing.JMenuItem contentsMenuItem;
-  private javax.swing.JMenuItem copyMenuItem;
-  private javax.swing.JMenuItem cutMenuItem;
-  private javax.swing.JMenuItem deleteMenuItem;
-  private javax.swing.JMenu editMenu;
-  private gui.escenario.Escenario escenario;
-  private javax.swing.JMenuItem exitMenuItem;
-  private javax.swing.JMenu fileMenu;
-  private javax.swing.JMenu helpMenu;
-  private javax.swing.JDialog jDialog1;
-  private javax.swing.JMenuBar menuBar;
-  private javax.swing.JMenuItem openMenuItem;
-  private javax.swing.JMenuItem pasteMenuItem;
-  private javax.swing.JMenuItem saveAsMenuItem;
-  private javax.swing.JMenuItem saveMenuItem;
+  private final gui.escenario.Escenario escenario = new gui.escenario.Escenario();
+  private final javax.swing.JPanel top = new javax.swing.JPanel();
   // End of variables declaration//GEN-END:variables
 
-  public Escenario getEscenario() {
-    return escenario;
+  private final Object psj_lock=new Object();
+  private void init() {
+
+
+    //controloar los pasos de nivel
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        synchronized (escenario) {
+
+          int i = 1;
+          for (Estructura map : getMapas()) {
+
+            TitledBorder border = (TitledBorder) top.getBorder();
+            border.setTitle("Nivel " + i+" -- "+map.getNombre());
+
+            escenario.setEstructura(map);
+            escenario.setPersonajes(getPersonajes());
+            escenario.setEnemies(getEnemigos());
+            try {
+              escenario.wait();
+              i++;
+            } catch (InterruptedException ex) {
+              Logger.getLogger(Win.class.getName()).log(Level.SEVERE, null, ex);
+            }
+          }
+        }
+        ganastes();
+      }
+    }).start();
+
+    //actulizar datos de jugadores
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        for (;;) {
+          
+          final LinkedList<Personaje> personajes1 = getPersonajes();  
+          synchronized (personajes1) {
+            
+            top.removeAll();
+            //estadisticas
+            int i = 1;
+            for (Personaje p : personajes1) {
+              String table = "<table>";
+              final String row = "<tr><td><b>%s</b>:</td><td>%s</td></tr>";
+
+              //table += String.format(row,"Jugador",i);
+              table += String.format(row, "Nombre", p.getNombre());
+              table += String.format(row, "Vida", p.getVida());
+              table += String.format(row, "Magia", p.getMagia());
+              table += String.format(row, "Fuerza", p.getFuerza());
+              table += String.format(row, "Fuerza Magica", p.getFuerza_magica());
+              table += String.format(row, "Costo Magico", p.getCosto_magico());
+              table += String.format(row, "Estado", p.getEstado());
+
+
+              final JLabel info = new JLabel("<html>" + table + "</html>");
+              final TitledBorder title = new TitledBorder("Jugador " + i);
+              title.setTitleFont(new Font("Manteka", Font.BOLD, 18));
+              info.setBorder(title);
+              top.add(info);
+              i++;
+            }
+            
+            //para que refresque el pangel seguramente...
+            new SwingWorker() {
+
+              @Override
+              protected Object doInBackground() throws Exception {
+                top.updateUI();
+                return null;
+              }
+            }.execute();
+            
+            try {
+              personajes1.wait();
+            } catch (InterruptedException ex) {
+              Logger.getLogger(Win.class.getName()).log(Level.SEVERE, null, ex);
+            }
+          }
+        }
+      }
+    }).start();
+
+  }
+  LinkedList<Estructura> mapas = new LinkedList<>();
+  LinkedList<Enemigos> enemigos = new LinkedList<>();
+  LinkedList<Personaje> personajes = new LinkedList<>();
+
+  public void setPersonajes(LinkedList<Personaje> personajes) {
+    this.personajes = personajes;
+  }
+
+  public void setMapas(LinkedList<Estructura> mapas) {
+    
+    this.mapas = mapas;
+  }
+
+  public void setEnemigos(LinkedList<Enemigos> enemigos) {
+    this.enemigos = enemigos;
+  }
+
+  public synchronized LinkedList<Estructura> getMapas() {
+    if (mapas.isEmpty()) {
+      //<editor-fold defaultstate="collapsed" desc="default">
+      final Estructura e = new Estructura("Ejemplo", new Dimension(4, 4));
+      Estructura.Casilla inicio = new Estructura.Casilla(new Point(0, 0), new Espacio("t1", new File("ext/start.png")));
+      Estructura.Casilla fin = new Estructura.Casilla(new Point(3, 2), new Espacio("t4", new File("ext/end.png")));
+      fin.getTipo().setFin(true);
+      
+      Estructura.Casilla explosiva=new Estructura.Casilla(new Point(1, 0), new Espacio("mina", new File("ext/bomb1.png")));
+      explosiva.getTipo().setEspecial(new Espacio.Especial());
+      explosiva.getTipo().getEspecial().setDanio(50);
+      
+      Estructura.Casilla vida=new Estructura.Casilla(new Point(1, 1), new Espacio("cura", new File("ext/vida.png")));
+      vida.getTipo().setEspecial(new Espacio.Especial());
+      vida.getTipo().getEspecial().setCura(50);
+      
+      Estructura.Casilla magia=new Estructura.Casilla(new Point(1, 2), new Espacio("magia", new File("ext/magia.png")));
+      magia.getTipo().setEspecial(new Espacio.Especial());
+      magia.getTipo().getEspecial().setMagia(10);
+      
+      Estructura.Casilla invi=new Estructura.Casilla(new Point(3, 3), new Espacio("invi", new File("ext/invi.png")));
+      invi.getTipo().setEspecial(new Espacio.Especial());
+      invi.getTipo().getEspecial().setInvencibilidad(5000);
+      
+      Point[] walls = new Point[]{
+        new Point(0, 1), new Point(0, 2),
+        new Point(2, 1), new Point(2, 2),
+        new Point(3, 0), new Point(3, 1)
+      };
+      Espacio we = new Espacio("wall", new File("ext/texture/wall.jpg"));
+      we.setPasable(false);
+      for (Point w : walls) {
+        Estructura.Casilla wc = new Estructura.Casilla(w, we);
+        e.addCasilla(wc);
+      }
+
+      e.addCasilla(inicio);
+      e.addCasilla(fin);
+
+      e.addCasilla(explosiva);
+      e.addCasilla(vida);
+      e.addCasilla(magia);
+      e.addCasilla(invi);
+      
+      mapas.add(e);
+
+      mapas.add(new Estructura("Nivel 2", new Dimension(2, 2)));
+      //</editor-fold>
+    }
+
+
+    return mapas;
+  }
+
+  public synchronized LinkedList<Personaje> getPersonajes() {
+    if (personajes.isEmpty()) {
+      //defaults...
+      Personaje p = new Personaje("Default1", 100, 10, 50, 5, 2, new ImageIcon("ext/psj/car1.png").getImage());
+      Personaje p1 = new Personaje("Default2", 100, 10, 50, 5, 2, new ImageIcon("ext/psj/car2.png").getImage());
+
+      p1.setKeys(KeyEvent.VK_W, KeyEvent.VK_D, KeyEvent.VK_S, KeyEvent.VK_A,KeyEvent.VK_J,KeyEvent.VK_K);
+      personajes.add(p);
+      personajes.add(p1);
+    }
+    return personajes;
+  }
+
+  public LinkedList<Enemigos> getEnemigos() {
+    return enemigos;
+  }
+  
+  private void ganastes(){
+    JOptionPane.showMessageDialog(this, "¡GANASTES!");
   }
 }

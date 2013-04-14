@@ -4,12 +4,15 @@
  */
 package gui;
 
+import compiler.bad.Enemigos;
 import compiler.lvl.Estructura;
+import compiler.psj.Personaje;
 import gui.CompilerSystem.DirViewer;
 import gui.CompilerSystem.List;
 import java.nio.file.FileSystems;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import javax.swing.JFrame;
 import javax.swing.WindowConstants;
 
@@ -156,16 +159,34 @@ public class Win extends javax.swing.JFrame {
   private void play_buttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_play_buttonActionPerformed
     // TODO add your handling code here:
     HashSet<List.Cell> set = maps_csystem.getSet();
-    if (!set.isEmpty()) {
-      for (List.Cell cell : set) {
-        HashMap<String, Object> map = (HashMap<String, Object>) cell.getValue();
-        Estructura estructura = (Estructura) map.get("estructura");
-        if (estructura != null) {
-          getWe().getEscenario().setEstructura(estructura);
-        }
-      }
-      getWe().setVisible(true);
+    HashSet<List.Cell> set1 = psj_csystem.getSet();
+    HashSet<List.Cell> set2 = bad_csystem.getSet();
+    
+    LinkedList<Estructura> mapas=new LinkedList<>();
+    LinkedList<Personaje> personajes=new LinkedList<>();
+    LinkedList<Enemigos> enemigos=new LinkedList<>();
+    
+    for (List.Cell cell : set) {
+      HashMap<String, Object> map = (HashMap<String, Object>) cell.getValue();
+      Estructura estructura = (Estructura) map.get("estructura");
+      mapas.add(estructura);
     }
+    for (List.Cell cell : set1) {
+      HashMap<String, Object> map = (HashMap<String, Object>) cell.getValue();
+      Personaje estructura = (Personaje) map.get("personaje");
+      personajes.add(estructura);
+    }
+    for (List.Cell cell : set2) {
+      HashMap<String, Object> map = (HashMap<String, Object>) cell.getValue();
+      Enemigos estructura = (Enemigos) map.get("enemigo");
+      enemigos.add(estructura);
+    }
+
+    
+    getWe().setMapas(mapas);
+    getWe().setPersonajes(personajes);
+    getWe().setEnemigos(enemigos);
+    getWe().setVisible(true);
   }//GEN-LAST:event_play_buttonActionPerformed
 
   /**

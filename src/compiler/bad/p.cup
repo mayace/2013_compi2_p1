@@ -151,6 +151,7 @@ inicio		::=	bad:x
 					Hoja hoja=(Hoja)x.get("hoja");
 					if(parser.errores.isEmpty()){
 						hoja.exec();
+						parser.errores.addAll(getEnemigos().errores);
 					}
 					System.out.println(".bad compiled...");
 				:}
@@ -162,6 +163,8 @@ bad			::=	bad1:l be:x
 					Hoja right=(Hoja)x.get("hoja");
 					Hoja hoja=newHoja(Operacion.STMT,left,right);
 					
+					getEnemigos().be_hoja=right;
+					
 					RESULT=new Attr("hoja",hoja);
 				:}
 				;
@@ -170,6 +173,9 @@ bad1		::=	bad2:l bc:x
 					Hoja left=(Hoja)l.get("hoja");
 					Hoja right=(Hoja)x.get("hoja");
 					Hoja hoja=newHoja(Operacion.STMT,left,right);
+					
+					getEnemigos().bd_hoja=left;
+					getEnemigos().bc_hoja=right;
 					
 					RESULT=new Attr("hoja",hoja);
 				:}
@@ -777,7 +783,7 @@ be_methods		::=	PROC_ASIGNAR_ARMA P1 expr:i COMA expr:i1 P2
 					{:
 						Hoja left=null;
 						Hoja right=null;
-						Hoja hoja=newHoja(Operacion.ASIGNAR_SALTO,left,right);
+						Hoja hoja=newHoja(Operacion.AVANZAR,left,right);
 						
 						Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-10);
 						Hoja estrategia	=(Hoja)i.get("hoja");
@@ -838,7 +844,7 @@ be_methods		::=	PROC_ASIGNAR_ARMA P1 expr:i COMA expr:i1 P2
 						RESULT=x;
 					:}
 					;
-be_paso			::=	MOV_LINEAL		{:RESULT=new Attr("movimiento",Movimiento.CIRCULAR);:}
+be_paso			::=	MOV_LINEAL		{:RESULT=new Attr("movimiento",Movimiento.LINEAL);:}
 					|MOV_CIRCULAR	{:RESULT=new Attr("movimiento",Movimiento.CIRCULAR);:}
 					|error			{:error("Se esperaba un tipo de movimiento.",null,SINTACTICO);RESULT=new Attr();:}
 					;

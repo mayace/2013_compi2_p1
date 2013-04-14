@@ -2,12 +2,22 @@ package compiler.bad;
 
 import compiler.Error;
 import compiler.bad.Enemigos.Simbolo.Tipo;
+import compiler.lvl.Estructura;
+import gui.escenario.Escenario;
+import java.awt.Image;
 import java.awt.Point;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java_cup.runtime.Symbol;
+import javax.swing.ImageIcon;
 
 public class Enemigos {
 
@@ -145,7 +155,7 @@ public class Enemigos {
       if (tipo == null) {
         throw new NullPointerException("Tipo nulo.");
       }
-      if(val==null){
+      if (val == null) {
         return null;
       }
       //////
@@ -302,8 +312,10 @@ public class Enemigos {
     //</editor-fold>
 
     private void error(final java.lang.Throwable exce, Hoja l) {
-      Error e = new Error(exce.toString(), l.getSymbol(), Error.Type.SEMANTIC);
+      Error e = new Error(exce.getMessage(), l.getSymbol(), Error.Type.SEMANTIC);
       e.println();
+      errores.add(e);
+
     }
 
     private void setf(Hoja l, Hoja r) {
@@ -416,7 +428,7 @@ public class Enemigos {
         Object v1 = getHojaVal(l);
         Object v2 = getHojaVal(r);
 
-        
+
         result = !v1.equals(v2);
         setTipo(Simbolo.Tipo.BOOLEAN);
       } catch (Exception exce) {
@@ -594,6 +606,12 @@ public class Enemigos {
         sin_hojas.add(Operacion.ASIGNAR_PASO);
         sin_hojas.add(Operacion.ASIGNAR_HABILIDAD);
         sin_hojas.add(Operacion.ASIGNAR_SALTO);
+        sin_hojas.add(Operacion.AVANZAR);
+        sin_hojas.add(Operacion.GIRAR);
+        sin_hojas.add(Operacion.ARMA_PROPIA);
+        sin_hojas.add(Operacion.GET_LIBRE);
+        sin_hojas.add(Operacion.BORDE_TABLERO);
+        
       }
       return sin_hojas;
     }
@@ -754,6 +772,15 @@ public class Enemigos {
           break;
         case GIRAR:
           girar();
+          break;
+        case GET_LIBRE:
+          setVal(getLibre());
+          break;
+        case ARMA_PROPIA:
+          setVal(arma_propia());
+          break;
+        case BORDE_TABLERO:
+          setVal(borde_tablero());
           break;
         default:
           throw new AssertionError(oper.name());
@@ -1021,6 +1048,7 @@ public class Enemigos {
     }
 
     private void crear_estrategia() {
+
       try {
         Object v = getVal();
         if (v instanceof Object[] && ((Object[]) v).length == 3) {
@@ -1162,7 +1190,7 @@ public class Enemigos {
       } catch (NullPointerException | InterruptedException exce) {
         error(exce, this);
       }
-      
+
     }
 
     private void asignar_arma() {
@@ -1172,15 +1200,15 @@ public class Enemigos {
           Object[] val = (Object[]) temp;
           Hoja h1 = (Hoja) val[0];
           Hoja h2 = (Hoja) val[1];
-          
+
           h1.exec();
           h2.exec();
-          
+
           Integer i1 = getInteger(h1.getVal());
           Integer id2 = getInteger(h2.getVal());
           Enemigo enemigo = getEnemigo(i1);
           Arma arma = getArma(id2);
-          
+
           enemigo.addArmas(id2);
           System.err.println("arma asignada");
         }
@@ -1192,36 +1220,46 @@ public class Enemigos {
     private void asignar_paso() {
       try {
         Object[] array = getValArray(getVal());
-        
+
         Hoja i1 = (Hoja) array[0];
         Hoja i2 = (Hoja) array[1];
         Hoja i3 = (Hoja) array[2];
         Hoja i4 = (Hoja) array[3];
         Movimiento i5 = (Movimiento) array[4];
-        
+
         i1.exec();
         i2.exec();
         i3.exec();
         i4.exec();
-        
+
         final int id1 = getInteger(i1.getVal());
         final int id2 = getInteger(i2.getVal());
-        
+
         Estrategia estrategia = getEstrategia(id1);
         Enemigo enemigo = getEnemigo(id2);
         int x = getInteger(i3.getVal());
         int y = getInteger(i4.getVal());
         Point p = new Point(x, y);
         Paso paso = new Paso(id1, id2, p, i5);
+
+
+        enemigo.addTask(operacion, paso);
       } catch (Exception e) {
         error(e, this);
       }
-      
+
     }
 
-    private Object[] getValArray(Object val)throws UnsupportedOperationException{
-      if (val instanceof Object[]) {
-        Object[] array = (Object[]) val;
+    //con restricciones... Object val no necesario...
+    //ya que se habla de esta misma hoja
+    //ya no es una funcion general
+    Object val2=null;
+    private Object[] getValArray(Object val) throws UnsupportedOperationException {
+      if(val2==null){
+        val2=val;
+      }
+      if (val2 instanceof Object[]) {
+        Object[] array = (Object[]) val2;
         return array;
       }
       throw new UnsupportedOperationException("No es array");
@@ -1230,28 +1268,29 @@ public class Enemigos {
     private void asignar_salto() {
       try {
         Object[] array = getValArray(getVal());
-        
-        Hoja i1=(Hoja) array[0];
-        Hoja i2=(Hoja) array[1];
-        Hoja i3=(Hoja) array[2];
-        Hoja i4=(Hoja) array[3];
-        
+
+        Hoja i1 = (Hoja) array[0];
+        Hoja i2 = (Hoja) array[1];
+        Hoja i3 = (Hoja) array[2];
+        Hoja i4 = (Hoja) array[3];
+
         i1.exec();
         i2.exec();
         i3.exec();
         i4.exec();
-        
-        int id1=getInteger(i1.getVal());
-        int id2=getInteger(i2.getVal());
-        int x=getInteger(i3.getVal());
-        int y=getInteger(i4.getVal());
-        
+
+        int id1 = getInteger(i1.getVal());
+        int id2 = getInteger(i2.getVal());
+        int x = getInteger(i3.getVal());
+        int y = getInteger(i4.getVal());
+
         getEstrategia(id1);
-        getEnemigo(id2);
+        Enemigo enemigo = getEnemigo(id2);
         Point destino = new Point(x, y);
-        
+
         Salto salto = new Salto(id1, id2, destino);
-        
+
+       enemigo.addTask(operacion, salto);
       } catch (Exception e) {
         error(e, this);
       }
@@ -1260,25 +1299,25 @@ public class Enemigos {
     private void asignar_habilidad() {
       try {
         Object[] array = getValArray(getVal());
-        
-        Hoja i1=(Hoja) array[0];
-        Hoja i2=(Hoja) array[1];
-        Hoja i3=(Hoja) array[2];
-        Hoja i4=(Hoja) array[3];
-        
+
+        Hoja i1 = (Hoja) array[0];
+        Hoja i2 = (Hoja) array[1];
+        Hoja i3 = (Hoja) array[2];
+        Hoja i4 = (Hoja) array[3];
+
         i1.exec();
         i2.exec();
         i3.exec();
         i4.exec();
-        
-        int id1=getInteger(i1.getVal());
-        int id2=getInteger(i1.getVal());
-        int id3=getInteger(i1.getVal());
-        int detonaciones=getInteger(i1.getVal());
-        
-        
-        
-        
+
+        int id1 = getInteger(i1.getVal());
+        int id2 = getInteger(i1.getVal());
+        int id3 = getInteger(i1.getVal());
+        int detonaciones = getInteger(i1.getVal());
+
+
+
+
       } catch (Exception e) {
         error(e, this);
       }
@@ -1287,18 +1326,22 @@ public class Enemigos {
     private void avanzar() {
       try {
         Object[] array = getValArray(getVal());
-        
-        Hoja i1 =(Hoja) array[0];
-        Hoja i2 =(Hoja) array[1];
-        Hoja i3 =(Hoja) array[2];
-        
+
+        Hoja i1 = (Hoja) array[0];
+        Hoja i2 = (Hoja) array[1];
+        Hoja i3 = (Hoja) array[2];
+
         i1.exec();
         i2.exec();
         i3.exec();
+
+        int id1 = getInteger(i1.getVal());
+        int id2 = getInteger(i2.getVal());
+        int pasos = getInteger(i3.getVal());
+        Enemigo enemigo = getEnemigo(id2);
         
-        int id1=getInteger(i1.getVal());
-        int id2=getInteger(i2.getVal());
-        int pasos=getInteger(i3.getVal());
+        enemigo.addTask(operacion, pasos);
+        
         
       } catch (Exception e) {
         error(e, this);
@@ -1306,9 +1349,104 @@ public class Enemigos {
     }
 
     private void girar() {
-      throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+      try {
+        Object[] array = getValArray(getVal());
+
+        Hoja i1 = (Hoja) array[0];
+        Hoja i2 = (Hoja) array[1];
+        Hoja i3 = (Hoja) array[2];
+
+        i1.exec();
+        i2.exec();
+        i3.exec();
+
+        int id1 = getInteger(i1.getVal());
+        int id2 = getInteger(i2.getVal());
+        int orientacion = getInteger(i3.getVal());
+        Enemigo enemigo = getEnemigo(id2);
+        
+        enemigo.addTask(operacion, orientacion);
+        
+      } catch (Exception e) {
+        error(e, this);
+      }
     }
-    
+
+    private Object getLibre() {
+      try {
+        Object[] valor = getValArray(val);
+
+        Hoja i1 = (Hoja) valor[0];
+        Hoja i2 = (Hoja) valor[1];
+        Hoja i3 = (Hoja) valor[2];
+
+
+        i1.exec();
+        i2.exec();
+        i3.exec();
+        Integer id = getInteger(i1.getVal());
+        Integer x = getInteger(i2.getVal());
+        Integer y = getInteger(i3.getVal());
+        Enemigo enemigo = getEnemigo(id);
+        Point target=new Point(x, y);
+        
+        setTipo(Tipo.BOOLEAN);
+        if(enemigo.mapa!=null){
+          return enemigo.malo.point!=target;
+        }
+      } catch (Exception e) {
+        error(e, this);
+      }
+      return false;
+    }
+
+    private Object arma_propia() {
+      try {
+        Object[] valor = getValArray(val);
+
+        Hoja i1 = (Hoja) valor[0];
+        Hoja i2 = (Hoja) valor[1];
+
+
+        i1.exec();
+        i2.exec();
+        Integer id1 = getInteger(i1.getVal());
+        Integer id2 = getInteger(i2.getVal());
+        
+        
+        Enemigo enemigo = getEnemigo(id1);
+        
+        setTipo(Tipo.BOOLEAN);
+        
+        return enemigo.armas.contains(id2);
+      } catch (Exception e) {
+        error(e, this);
+      }
+      return false;
+    }
+
+    private Object borde_tablero() {
+      try {
+        Object[] valor = getValArray(val);
+
+        Hoja i1 = (Hoja) valor[0];
+
+
+        i1.exec();
+        Integer id1 = getInteger(i1.getVal());
+        Enemigo enemigo = getEnemigo(id1);
+        
+        setTipo(Tipo.BOOLEAN);
+        if(enemigo.mapa!=null){
+          
+        }
+        
+        
+      } catch (Exception e) {
+        error(e, this);
+      }
+      return false;
+    }
   }
 
   public static class Simbolo {
@@ -1426,7 +1564,7 @@ public class Enemigos {
     }
 
     public Object get(int p, int size) {
-      if(p<0){
+      if (p < 0) {
         return null;
       }
       char[] val = new char[size];
@@ -1510,6 +1648,10 @@ public class Enemigos {
       this.nombre = nombre;
       this.ruta = ruta;
     }
+
+    public Image getImage() {
+      return new ImageIcon(ruta).getImage();
+    }
   }
 
   public enum Nivel {
@@ -1541,7 +1683,7 @@ public class Enemigos {
     }
   }
 
-  public class Enemigo {
+  public class Enemigo extends Thread {
 
     String nombre;
     int potencia;
@@ -1559,8 +1701,131 @@ public class Enemigos {
         this.armas.add(i);
       }
     }
-  
+
+    public int getImagen() {
+      return imagen;
+    }
+    ///////////////////
+    Escenario.Malo malo;
+    Estructura mapa;
+    Escenario escenario;
+    final LinkedHashMap<Operacion, Object> tasks = new LinkedHashMap<>();
+
+    @Override
+    public void run() {
+      for (;;) {
+        synchronized (tasks) {
+          if (tasks.isEmpty()) {
+            try {
+              tasks.wait();
+            } catch (InterruptedException ex) {
+              Logger.getLogger(Enemigos.class.getName()).log(Level.SEVERE, null, ex);
+            }
+          } else {
+            for (Map.Entry<Operacion, Object> entry : tasks.entrySet()) {
+              Operacion operacion = entry.getKey();
+              Object val = entry.getValue();
+              ////realizar la operacion
+
+
+              switch (operacion) {
+                case ASIGNAR_PASO:
+                  hacer_asignarPaso(val);
+                  break;
+                case ASIGNAR_SALTO:
+                  hacer_asignarSalto(val);
+                  break;
+                case AVANZAR:
+                  hacer_avanzar(val);
+                  break;
+                case GIRAR:
+                  hacer_girar(val);
+                  break;
+              }
+
+              //fin de la operacion
+            }
+            tasks.clear();
+          }
+        }
+      }
+    }
+
+    public synchronized void start(Escenario.Malo malo, Estructura mapa, Escenario escenario) {
+      this.malo = malo;
+      this.mapa = mapa;
+      this.escenario = escenario;
+      super.start(); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private void avanzar() {
+      malo.moveUp();
+      try {
+        escenario.repaint();
+        sleep(1000);
+      } catch (InterruptedException ex) {
+        Logger.getLogger(Enemigos.class.getName()).log(Level.SEVERE, null, ex);
+      }
+    }
+
+    private void hacer_asignarPaso(Object val) {
+      Paso paso = (Paso) val;
+      if (mapa.containsKey(paso.destino)) {
+        if (paso.movimiento == Movimiento.LINEAL) {
+          malo.setFaceToX(paso.destino.x);
+          while (malo.point.x != paso.destino.x) {
+            avanzar();
+          }
+          malo.setFaceToY(paso.destino.y);
+          while (malo.point.y != paso.destino.y) {
+            avanzar();
+          }
+        } else {
+          malo.setFaceToX(paso.destino.x);
+          avanzar();
+        }
+      } else {
+        System.err.println("no contiene punto " + paso.destino);
+      }
+    }
+
+    private void hacer_asignarSalto(Object val) {
+      
+      Salto salto=(Salto) val;
+      if(mapa.containsKey(salto.destino)){
+        malo.point=salto.destino;
+        escenario.repaint();
+      }
+    }
     
+    private void addTask(Operacion operacion,Object val){
+      if (tasks.isEmpty()) {
+          synchronized (tasks) {
+            tasks.put(operacion, val);
+            tasks.notify();
+          }
+        }
+    }
+
+
+    private void hacer_avanzar(Object val) {
+      int pasos=(int) val;
+      
+      while(mapa.containsKey(malo.nextMoveUp())){
+        avanzar();
+      }
+    }
+
+    private void hacer_girar(Object val) {
+      int orientacion=(int) val;
+      if(orientacion==-1){
+        malo.moveLeft();
+        escenario.repaint();
+      }else if(orientacion==1){
+        malo.moveRight();
+        escenario.repaint();
+      }
+    }
   }
 
   public class Estrategia {
@@ -1573,8 +1838,9 @@ public class Enemigos {
       this.punteo = punteo;
     }
   }
-  
-  public class Paso{
+
+  public class Paso {
+
     int estrategia;
     int enemigo;
     Point destino;
@@ -1583,43 +1849,43 @@ public class Enemigos {
     public Paso(int estrategia, int enemigo, Point destino, Movimiento movimiento) {
       HashMap<Integer, Estrategia> m1 = getEstrategiaMap();
       HashMap<Integer, Enemigo> m2 = getEnemigoMap();
-      if(!m1.containsKey(estrategia)){
-        throw new NullPointerException("No existe estrategia con id="+estrategia);
+      if (!m1.containsKey(estrategia)) {
+        throw new NullPointerException("No existe estrategia con id=" + estrategia);
       }
-      if(!m2.containsKey(enemigo)){
-          throw new NullPointerException("No existe enemigo con id="+enemigo);
+      if (!m2.containsKey(enemigo)) {
+        throw new NullPointerException("No existe enemigo con id=" + enemigo);
       }
       this.estrategia = estrategia;
       this.enemigo = enemigo;
       this.destino = destino;
       this.movimiento = movimiento;
     }
-    
-    
   }
-  
-  public enum Movimiento{CIRCULAR,LINEAL}
-  
-  public class Salto{
+
+  public enum Movimiento {
+
+    CIRCULAR, LINEAL
+  }
+
+  public class Salto {
+
     int estrategia;
     int enemigo;
     Point destino;
 
-    public Salto(int estrategia, int enemigo, Point destino) throws NullPointerException{
-      
+    public Salto(int estrategia, int enemigo, Point destino) throws NullPointerException {
+
       getEstrategia(estrategia);
       getEnemigo(enemigo);
-      
+
       this.estrategia = estrategia;
       this.enemigo = enemigo;
       this.destino = destino;
     }
-    
   }
-  
-  
-  public class Habilidad{
-    
+
+  public class Habilidad {
+
     int estrategia;
     int enemigo;
     int arma;
@@ -1634,14 +1900,8 @@ public class Enemigos {
       this.arma = arma;
       this.detonaciones = detonaciones;
     }
-    
-    
-    
   }
-  
   //</editor-fold>
-  
-  
   ///sin ordenar...
   private final HashMap<String, HashMap<Integer, ? extends Object>> mapa = new HashMap<>();
 
@@ -1707,35 +1967,35 @@ public class Enemigos {
     getArmaMap().put(id, arma);
   }
 
-  Enemigo getEnemigo(int id)throws NullPointerException{
+  Enemigo getEnemigo(int id) throws NullPointerException {
     HashMap<Integer, Enemigo> map = getEnemigoMap();
-    
-    if(map.containsKey(id)){
+
+    if (map.containsKey(id)) {
       return map.get(id);
-    }else{
-      throw new NullPointerException("No existe enemigo con id="+id);
+    } else {
+      throw new NullPointerException("No existe enemigo con id=" + id);
     }
   }
-  Arma getArma(int id)throws NullPointerException{
+
+  Arma getArma(int id) throws NullPointerException {
     HashMap<Integer, Arma> map = getArmaMap();
-    
-    if(map.containsKey(id)){
+
+    if (map.containsKey(id)) {
       return map.get(id);
-    }else{
-      throw new NullPointerException("No existe arma con id="+id);
+    } else {
+      throw new NullPointerException("No existe arma con id=" + id);
     }
   }
-  Estrategia getEstrategia(int id)throws NullPointerException{
+
+  Estrategia getEstrategia(int id) throws NullPointerException {
     HashMap<Integer, Estrategia> map = getEstrategiaMap();
-    
-    if(map.containsKey(id)){
+
+    if (map.containsKey(id)) {
       return map.get(id);
     }
-      throw new NullPointerException("No existe estrategia con id="+id);
+    throw new NullPointerException("No existe estrategia con id=" + id);
   }
-  
-  
-  
+
   public enum Operacion {
 
     SUMA, RESTA, MULTIPLICACION, DIVISION, EQUAL, LTHAN, LETHAN,
@@ -1744,9 +2004,59 @@ public class Enemigos {
     WHILE, WHILE_PAUSE, WHILE_STOP, ADDF, PRINTLN, GET_VAL,
     IF, ELSE_IF, ELSE, CREAR_ENEMIGO, CREAR_ARMA,
     CREAR_POTENCIA, CREAR_IMAGEN, CREAR_ESTRATEGIA,
-    FOR, DISMINUIR, AUMENTAR, ASIGNAR_HABILIDAD,ASIGNAR_SALTO,
-    ASIGNAR_ARMA,AVANZAR,GIRAR,GET_MUNICIONES,ARMA_PROPIA, BORDE_TABLERO, 
-    GET_LIBRE,ASIGNAR_PASO
-    
+    FOR, DISMINUIR, AUMENTAR, ASIGNAR_HABILIDAD, ASIGNAR_SALTO,
+    ASIGNAR_ARMA, AVANZAR, GIRAR, GET_MUNICIONES, ARMA_PROPIA, BORDE_TABLERO,
+    GET_LIBRE, ASIGNAR_PASO
   };
+  ///////////////
+  public Hoja bd_hoja = null;
+  public Hoja bc_hoja = null;
+  public Hoja be_hoja = null;
+
+  public void execBD() {
+    bd_hoja.exec();
+  }
+
+  public void execBC() {
+    bc_hoja.exec();
+  }
+
+  public Thread execBE() {
+    Thread thread = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        final Hoja hoja = be_hoja;
+        synchronized (hoja) {
+          for (;;) {
+            hoja.exec();
+            try {
+              hoja.wait();
+            } catch (InterruptedException ex) {
+              Logger.getLogger(Enemigos.class.getName()).log(Level.SEVERE, null, ex);
+            }
+          }
+        }
+      }
+    });
+    return thread;
+  }
+
+  public void init() {
+    getPila().p = 0;
+    getSimbolos().simbolos.clear();
+    getArmaMap().clear();
+    getEnemigoMap().clear();
+    getEstrategiaMap().clear();
+    getImagenMap().clear();
+    getPotenciaMap().clear();
+
+    bd_hoja.exec();
+    bc_hoja.exec();
+  }
+  LinkedList<Error> errores = new LinkedList<>();
+
+  ///friday 12
+  public Imagen getImagen(int id) {
+    return getImagenMap().get(id);
+  }
 }

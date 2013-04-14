@@ -1,0 +1,206 @@
+<Espacios>
+	<Espacio>
+		<Nombre>normal</Nombre>
+		<Pasable> verdadero </Pasable>
+		<Especial> </Especial>
+		<Imagen>ext/lvl/1/grama.png </Imagen>
+		<Inicio> falso </Inicio>
+		<Enemigo> falso </Enemigo>
+		<Fin>falso</Fin>
+	</Espacio>
+	<Espacio>
+		<Nombre>fuenteVida </Nombre>
+		<Pasable> verdadero </Pasable>
+		<Especial> <cura>20</cura> </Especial>
+		<Imagen>ext/fuente_vida.gif</Imagen>
+		<Inicio> falso </Inicio>
+		<Enemigo> falso </Enemigo>
+		<Fin>falso</Fin>
+	</Espacio>
+	<Espacio>
+		<Nombre>inicio </Nombre>
+		<Pasable> verdadero </Pasable>
+		<Especial></Especial>
+		<Imagen>ext/inicio.png</Imagen>
+		<Inicio> verdadero </Inicio>
+		<Enemigo> falso </Enemigo>
+		<Fin>falso</Fin>
+	</Espacio>
+	<Espacio>
+		<Nombre>fuenteMagica </Nombre>
+		<Pasable> verdadero </Pasable>
+		<Especial> <magia>100</magia> </Especial>
+		<Imagen>ext/fuente_magia.png</Imagen>
+		<Inicio> falso </Inicio>
+		<Enemigo> falso </Enemigo>
+		<Fin>falso</Fin>
+	</Espacio>
+	<Espacio>
+		<Nombre>lava </Nombre>
+		<Pasable> verdadero </Pasable>
+		<Especial> <dano>100</dano> </Especial>
+		<Imagen>ext/lvl/1/lava.png</Imagen>
+		<Inicio> falso </Inicio><Enemigo> falso </Enemigo>
+		<Fin>falso</Fin>
+	</Espacio>
+	<Espacio>
+		<Nombre>piedra </Nombre>
+		<Pasable> falso </Pasable>
+		<Especial></Especial>
+		<Imagen>ext/lvl/1/piedra.png</Imagen>
+		<Inicio> falso </Inicio>
+		<Enemigo> falso </Enemigo>
+		<Fin>falso</Fin>
+	</Espacio>
+	<Espacio>
+		<Nombre>salida </Nombre>
+		<Pasable> verdadero </Pasable>
+		<Especial></Especial>
+		<Imagen>ext/fin.png</Imagen>
+		<Inicio> falso </Inicio>
+		<Enemigo> falso </Enemigo>
+		<Fin>verdadero</Fin>
+	</Espacio>
+	<Espacio>
+		<Nombre>enemigo </Nombre>
+		<Pasable> verdadero </Pasable>
+		<Especial></Especial>
+		<Imagen>ext/psj/robot.png</Imagen>
+		<Inicio> falso </Inicio>
+		<Enemigo> verdadero</Enemigo>
+	</Espacio>
+</Espacios>
+
+<Nivel>
+	<Nombre>GreenHills</Nombre>
+	<Tamano>
+		<X>5</X>
+		<Y>5</Y>
+	</Tamano>
+	<Estructura>
+		<Casilla>
+			<X>0</X>
+			<Y>0</Y>
+			<Tipo>inicio</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>0</X>
+			<Y>1</Y>
+			<Tipo>normal</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>0</X>
+			<Y>2</Y>
+			<Tipo> normal </Tipo>
+			</Casilla>
+		<Casilla>
+			<X>0</X>
+			<Y>3</Y>
+			<Tipo> normal </Tipo>
+		</Casilla>
+		<Casilla>
+			<X>0</X>
+			<Y>4</Y>
+			<Tipo>fuenteVida</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>1</X>
+			<Y>0</Y>
+			<Tipo>piedra</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>1</X>
+			<Y>1</Y>
+			<Tipo>lava</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>1</X>
+			<Y>2</Y>
+			<Tipo> piedra</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>1</X>
+			<Y>3</Y>
+			<Tipo> piedra </Tipo>
+		</Casilla>
+		<Casilla>
+			<X>1</X>
+			<Y>4</Y>
+			<Tipo>normal</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>2</X>
+			<Y>0</Y>
+			<Tipo> salida </Tipo>
+		</Casilla>
+		<Casilla>
+			<X>2</X>
+			<Y>1</Y>
+			<Tipo>normal</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>2</X>
+			<Y>2</Y>
+		<Tipo> piedra </Tipo>
+		</Casilla><Casilla>
+			<X>2</X>
+			<Y>3</Y>
+			<Tipo> normal </Tipo>
+		</Casilla>
+		<Casilla>
+			<X>2</X>
+			<Y>4</Y>
+			<Tipo>normal</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>3</X>
+			<Y>0</Y>
+			<Tipo>piedra</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>3</X>
+			<Y>1</Y>
+			<Tipo>normal</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>3</X>
+			<Y>2</Y>
+			<Tipo>piedra</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>3</X>
+			<Y>3</Y>
+			<Tipo>normal</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>3</X>
+			<Y>4</Y>
+			<Tipo>piedra</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>4</X>
+			<Y>0</Y>
+			<Tipo>fuenteMagica</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>4</X>
+			<Y>1</Y>
+			<Tipo>enemigo</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>4</X>
+			<Y>2</Y>
+			<Tipo>normal</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>4</X>
+			<Y>3</Y>
+			<Tipo>normal</Tipo>
+		</Casilla>
+		<Casilla>
+			<X>4</X>
+			<Y>4</Y>
+			<Tipo>enemigo</Tipo>
+		</Casilla>
+	</Estructura>
+</Nivel>

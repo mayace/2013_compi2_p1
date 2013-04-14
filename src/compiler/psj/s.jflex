@@ -9,7 +9,7 @@ import java.util.LinkedList;
 %cup
 %line
 %column
-
+%state STRING
 
 %{
 	public LinkedList<compiler.Error> errors=new LinkedList<>();
@@ -27,6 +27,9 @@ import java.util.LinkedList;
 	private Symbol symbol(int type, Object value) {
 		return new Symbol(type, yyline, yycolumn, value);
 	}
+	
+	/** String **/
+	StringBuilder string=new StringBuilder();
 %}
 
 NEWLINE	=	\n|\r|\r\n
@@ -54,9 +57,28 @@ ID		=	({LETTER}|_)({LETTER}|_|{DIGIT})+
 	"Costo_Magico"			{return symbol(Sym.COSTO_MAGICO);}
 	":"						{return symbol(Sym.COLON);}
 	
+	"Imagen"		{return symbol(Sym.IMAGEN);}
+	
+	\"				{string.setLength(0);yybegin(STRING);}
+	
+	
 	{INT}		{return symbol(Sym.INT);}
 	{ID}		{return symbol(Sym.ID);}
 }
+
+<STRING>{
+	\"			{ 
+					yybegin(YYINITIAL); 
+					return symbol(Sym.STRING,string.toString()); 
+				}
+  [^\n\r\"\\]+	{ string.append( yytext() ); }
+  \\t           { string.append('\t'); }
+  \\n           { string.append('\n'); }
+  \\r           { string.append('\r'); }
+  \\\"          { string.append('\"'); }
+  \\            { string.append('\\'); }
+}
+
 
 .|\n			{
 				error("Illegal character.");

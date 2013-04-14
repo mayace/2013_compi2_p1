@@ -1,0 +1,52 @@
+BD:
+addf(Continuar,Boolean)
+addf(Saltar,Boolean)
+addf(EnemigoActual,Integer,0)
+addf(ContadorEnemigos,Integer)
+addf(NumeroEnemigos,Integer,0)
+addf(tempEnemigos,Integer,0)
+addf(idArmaActual,Integer)
+addf(x,Integer,0)
+addf(y,Integer,0)
+addf(widthTablero,Integer,getInt("5"))
+addf(heightTablero,Integer,5)
+addf(esquinaActual,Integer,0)
+addf(modoAtaque,Integer,0)
+addf(myControl, Char,'a')
+addf(valorDecimal,Float,11.01)
+
+BC:
+crearImagen(1,"myImagen1","/home/Usuario/Desktop/imagen1.jpg")
+crearImagen(2,"myImagen2","/home/Usuario/Desktop/imagen2.jpg")
+crearImagen(3,"myImagen3","/home/Usuario/Desktop/imagen3.jpg")
+crearImagen(4,"myImagen4","/home/Usuario/Desktop/imagen4.jpg")
+crearImagen(5,"myImagen5","/home/Usuario/Desktop/imagen5.jpg")
+--- DEFINICION: crearPotencia(id_potencia,nivel)
+crearPotencia(1,Tinny)
+crearPotencia(2,Low)
+crearPotencia(3,Medium)
+crearPotencia(4,Hight)
+crearPotencia(5,Heavy)
+--- DEFINICION: crearArma(id_arma,nombre,max,min,no_municiones)
+crearArma(1,"WaterCase",10,0,10)
+crearArma(2,"FireCase",100,0,90)
+crearArma(3,"Congelador",5,1,5)
+crearArma(4,"EmpatyWar",3,0,3)
+--- DEFINICION: crearEnemigo(id_enemigo,nombre,id_potencia, id_imagen)
+crearEnemigo(1,"General",5,1)
+crearEnemigo(2,"Sargento",3,2)
+crearEnemigo(3,"Especialista",2,3)
+crearEnemigo(4,"Cabo",1,5)
+--- DEFINICION: crearEstrategia(id_estrategia,nombre,punteo)
+crearEstrategia(1,"Evasion",0)
+crearEstrategia(2,"Ataque",0)
+
+BE:
+--- DEFINICION: setf(nombre_var,valor)
+setf(Saltar,Boolean,false)
+setf(NumeroEnemigos,Integer,4)
+
+
+mientras true
+
+fin_mientras

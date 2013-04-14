@@ -4,20 +4,30 @@
  */
 package gui.escenario;
 
+import compiler.bad.Enemigos;
 import compiler.lvl.Espacio;
 import compiler.lvl.Estructura;
+import compiler.psj.Personaje;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.ImageIcon;
+import javax.swing.SwingWorker;
 
 /**
  *
@@ -61,11 +71,11 @@ public class Escenario extends javax.swing.JPanel {
     this.setLayout(layout);
     layout.setHorizontalGroup(
       layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addGap(0, 396, Short.MAX_VALUE)
+      .addGap(0, 341, Short.MAX_VALUE)
     );
     layout.setVerticalGroup(
       layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addGap(0, 296, Short.MAX_VALUE)
+      .addGap(0, 267, Short.MAX_VALUE)
     );
   }// </editor-fold>//GEN-END:initComponents
 
@@ -78,52 +88,143 @@ public class Escenario extends javax.swing.JPanel {
         HashSet<Hero> get = keyMap.get(keyCode);
         final Estructura s = getEstructura();
 
-        for (Hero hero : get) {
-          if (keyCode == hero.keyDown) {
-            Point next = hero.nextMoveDown();
+        for (final Hero hero : get) {
 
-            if (s.containsKey(next)) {
-              Estructura.Casilla casilla = s.get(next);
-              if (casilla == null || casilla.getTipo().getPasable()) {
-                hero.moveDown();
-                repaint();
-              }
-
-            }
-
-          } else if (keyCode == hero.keyLeft) {
-
-            Point next = hero.nextMoveLeft();
-
-            if (s.containsKey(next)) {
-              Estructura.Casilla casilla = s.get(next);
-              if (casilla == null || casilla.getTipo().getPasable()) {
-                hero.moveLeft();
-                repaint();
-              }
-            }
-          } else if (keyCode == hero.keyRight) {
-            Point next = hero.nextMoveRight();
-
-            if (s.containsKey(next)) {
-              Estructura.Casilla casilla = s.get(next);
-              if (casilla == null || casilla.getTipo().getPasable()) {
-                hero.moveRight();
-                repaint();
-              }
-            }
-          } else if (keyCode == hero.keyUp) {
-            Point next = hero.nextMoveUp();
-
-            if (s.containsKey(next)) {
-              Estructura.Casilla casilla = s.get(next);
-              if (casilla == null || casilla.getTipo().getPasable()) {
-                hero.moveUp();
-                repaint();
-              }
-            }
+          if (hero.personaje.getEstado() == Personaje.Estado.MUERTO) {
+            return;
           }
 
+
+          if (keyCode == hero.keyDown) {
+            //<editor-fold defaultstate="collapsed" desc="down">
+
+            Point nextr = hero.nextRMoveDown();
+            ///
+            //            Point next = getPoint(nextr);
+            Point next = hero.nextMoveDown();
+            if (s.containsKey(next)) {
+              Estructura.Casilla casilla = s.get(next);
+              if (casilla == null || casilla.getTipo().getPasable()) {
+                hero.moveRealDown();
+                hero.point = next;
+                repaint();
+
+                //
+
+                if (casilla != null) {
+                  final Espacio tipo = casilla.getTipo();
+                  Espacio.Especial especial = tipo.getEspecial();
+                  if (tipo.getFin()) {
+                    synchronized (this) {
+                      notify();
+                    }
+                  }
+                  //realiza operaciones de casillas
+                  //que tengan atriutos de especial
+                  hacerEspecial(casilla, hero);
+                }
+
+              }
+            }
+            ///
+            //</editor-fold>
+          } else if (keyCode == hero.keyLeft) {
+            hero.moveLeft();
+            repaint();
+          } else if (keyCode == hero.keyRight) {
+            hero.moveRight();
+            repaint();
+          } else if (keyCode == hero.keyUp) {
+            //<editor-fold defaultstate="collapsed" desc="up">
+            Point nextr = hero.nextRMoveUp();
+            ///
+            Rectangle rec = getRectangle(nextr);
+            //            Point next = getPoint(nextr);
+            Point next = hero.nextMoveUp();
+            if (s.containsKey(next)) {
+              Estructura.Casilla casilla = s.get(next);
+              if (casilla == null || casilla.getTipo().getPasable()) {
+
+                hero.moveRealUp();
+                hero.point = next;
+                repaint();
+
+                if (casilla != null) {
+                  if (casilla.getTipo().getFin()) {
+                    synchronized (this) {
+                      notify();
+                    }
+                  }
+                }
+                hacerEspecial(casilla, hero);
+              }
+            }
+            ///
+            //</editor-fold>
+          } else if (keyCode == hero.KeyAttack) {
+            final Point target = hero.nextMoveUp();
+            //encargado de agregar e eliminar el efecto ataque
+            //de ataques
+            new SwingWorker() {
+              @Override
+              protected Object doInBackground() throws Exception {
+                final ArrayList<Ataque> al = getAtaques();
+
+
+                synchronized (al) {
+                  final Image img = new ImageIcon("ext/ataque.gif").getImage();
+                  Ataque ataque = new Ataque(img, target);
+
+                  int i = al.size();
+                  al.add(ataque);
+                  img.flush();
+                  repaint();
+                  al.wait(500);
+                  al.remove(i);
+                }
+
+                return null;
+              }
+            }.execute();
+          } else if (keyCode == hero.KeyMagic) {
+            
+            new SwingWorker<Object, Object>() {
+              @Override
+              protected Object doInBackground() throws Exception {
+                final ArrayList<Ataque> al = getAtaques();
+
+                synchronized (al) {
+                  final Image img = new ImageIcon("ext/magia.gif").getImage();
+                  Ataque ataque = new Ataque(img, new Point(hero.point.x,hero.point.y));
+                  ataque.face = hero.face;
+
+                  Point next = ataque.nextMoveUp();
+                  int i = -1;
+                  while (s.containsKey(next)) {
+                    Estructura.Casilla casilla = s.get(next);
+                    if (casilla==null||casilla.getTipo().getPasable()) {
+                      if (i == -1&&hero.personaje.hacerAtaqueMagico()) {
+                        i = al.size();
+                        al.add(ataque);
+                        img.flush();
+                        cambiosPersonaje();
+                      }
+                      ataque.moveUp();
+                      repaint();
+                      al.wait(250);
+                      next = ataque.nextMoveUp();
+                    } else {
+                      break;
+                    }
+                  }
+                  if (i >= 0) {
+                    al.remove(i);
+                  }
+                }
+                return null;
+              }
+            }.execute();
+          }
         }
       }
     }//GEN-LAST:event_formKeyPressed
@@ -137,20 +238,83 @@ public class Escenario extends javax.swing.JPanel {
   }//GEN-LAST:event_formMouseClicked
   // Variables declaration - do not modify//GEN-BEGIN:variables
   // End of variables declaration//GEN-END:variables
-  private Estructura estructura = null;
+  private Estructura estructura = new Estructura("Default", new Dimension(2, 2));
+  private LinkedList<Personaje> personajes = new LinkedList<>();
+  private LinkedList<Enemigos> enemies = new LinkedList<>();
   private final Dimension CELL = new Dimension(0, 0);
   private final LinkedList<Hero> heroes = new LinkedList<>();
-  private final LinkedList<MItem> enemies = new LinkedList<>();
+  private final LinkedList<Malo> malos = new LinkedList<>();
   HashMap<Integer, HashSet<Hero>> keyMap = new HashMap<>();
   GItem bg = new GItem(new ImageIcon("texture/t1.png").getImage(), null);
+  public final Boolean lock = false;
+
+  public void setEnemies(LinkedList<Enemigos> enemies) {
+    for (Enemigos enemigos : enemies) {
+      //exec bd and bd y vaciar simbolos y pila
+      enemigos.init();
+
+      for (Map.Entry<Integer, Enemigos.Enemigo> entry : enemigos.getEnemigoMap().entrySet()) {
+        Integer id = entry.getKey();
+        Enemigos.Enemigo enemigo = entry.getValue();
+        final Enemigos.Imagen imagen = enemigos.getImagen(enemigo.getImagen());
+        
+        Malo m = new Malo(imagen.getImage());
+        getMalos().add(m);
+        
+        enemigo.start(m,getEstructura(),this);
+      }
+      //start thread for the be
+      enemigos.execBE().start();
+    }
+//    
+    
+    this.enemies = enemies;
+  }
+
+  public LinkedList<Malo> getMalos() {
+    return malos;
+  }
+
+  
+  
+  public void setPersonajes(LinkedList<Personaje> personajes) {
+
+    synchronized (personajes) {
+      for (Personaje p : personajes) {
+        Hero h = new Hero(p);
+        final Estructura.Casilla inicio = getEstructura().getInicio();
+        if (inicio != null) {
+          h.point = inicio.getPunto();
+        }
+        addHero(h);
+      }
+    }
+    this.personajes = personajes;
+  }
+
+  void myinit() {
+    for (Enemigos enemigos : enemies) {
+      //exec bd and bd y vaciar simbolos y pila
+      enemigos.init();
+
+      for (Map.Entry<Integer, Enemigos.Enemigo> entry : enemigos.getEnemigoMap().entrySet()) {
+        Integer id = entry.getKey();
+        Enemigos.Enemigo enemigo = entry.getValue();
+        enemigo.start();
+      }
+      //start thread for the be
+      enemigos.execBE().start();
+    }
+  }
 
   void addHero(Hero hero) {
     LinkedList<Hero> ll = heroes;//si es get ciclo infinot
     ll.add(hero);
 
     HashMap<Integer, HashSet<Hero>> km = getKeyMap();
-    int[] keys = new int[]{hero.keyDown, hero.keyLeft, hero.keyRight, hero.keyUp};
+//    int[] keys = new int[]{hero.keyDown, hero.keyLeft, hero.keyRight, hero.keyUp};
 
+    int[] keys = hero.personaje.getKeys();
     for (int k : keys) {
       if (km.containsKey(k)) {
         HashSet<Hero> get = km.get(k);
@@ -172,7 +336,8 @@ public class Escenario extends javax.swing.JPanel {
     drawGrid(g);
     drawMap(g);
     drawHeros(g);
-
+    drawMalos(g);
+    drawAttacks(g);
 
   }
 
@@ -197,13 +362,49 @@ public class Escenario extends javax.swing.JPanel {
     int x = p.x * CELL.width;
     int y = p.y * CELL.height;
 
-    g.drawImage(d.image, x, y, CELL.width, CELL.height, this);
+    if (d instanceof Hero) {
+      Hero h = (Hero) d;
+
+//      x=h.real.x;
+//      y=h.real.y;
+//      
+      final int width = d.image.getWidth(null);
+      final int height = d.image.getHeight(null);
+      BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+      Graphics2D g2 = bi.createGraphics();
+
+
+      AffineTransform at = new AffineTransform();
+      at.rotate(Math.toRadians(h.angle), width / 2, height / 2);
+      g2.drawImage(d.image, at, null);
+
+
+      g.drawImage(bi, x, y, CELL.width, CELL.height, this);
+    } else if(d instanceof Malo){
+      Malo m=(Malo)d;
+      final int width = d.image.getWidth(null);
+      final int height = d.image.getHeight(null);
+      BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+      Graphics2D g2 = bi.createGraphics();
+
+
+      AffineTransform at = new AffineTransform();
+      at.rotate(Math.toRadians(m.angle), width / 2, height / 2);
+      g2.drawImage(d.image, at, null);
+
+      g.drawImage(bi, x, y, CELL.width, CELL.height, this);
+    }
+    else {
+      g.drawImage(d.image, x, y, CELL.width, CELL.height, this);
+    }
   }
 
   private void drawHeros(Graphics g) {
     LinkedList<Hero> l = getHeroes();
     for (Hero hero : l) {
-      drawGItem(g, hero);
+      if (hero.personaje.getEstado() != Personaje.Estado.MUERTO) {
+        drawGItem(g, hero);
+      }
     }
   }
 
@@ -212,12 +413,12 @@ public class Escenario extends javax.swing.JPanel {
     final Estructura e = getEstructura();
 
     //bg
-    for (int i = 0; i < e.getTamanio().width; i++) {
-      for (int j = 0; j < e.getTamanio().height; j++) {
-        GItem gi = new GItem(new ImageIcon("ext/texture/t1.png").getImage(), new Point(i, j));
-        drawGItem(g, gi);
-      }
-    }
+//    for (int i = 0; i < e.getTamanio().width; i++) {
+//      for (int j = 0; j < e.getTamanio().height; j++) {
+//        GItem gi = new GItem(new ImageIcon("ext/texture/t1.png").getImage(), new Point(i, j));
+//        drawGItem(g, gi);
+//      }
+//    }
 
 
     //map
@@ -230,6 +431,117 @@ public class Escenario extends javax.swing.JPanel {
       }
       GItem gi = new GItem(img, point);
       drawGItem(g, gi);
+
+    }
+  }
+
+  //sdfsdfs
+  private Rectangle getRectangle(Point nextr) {
+    int x = nextr.x * CELL.width;
+    int y = nextr.y * CELL.height;
+    Rectangle r = new Rectangle(new Point(x, y), CELL);
+
+    return r;
+  }
+
+  private Point getPoint(Point nextr) {
+
+    int x = (nextr.x) / CELL.width;
+    int y = (nextr.y) / CELL.height;
+
+
+    final Point p = new Point(x, y);
+
+    Rectangle r = new Rectangle(p, CELL);
+
+
+    return p;
+  }
+
+  private void cambiosPersonaje() {
+    LinkedList<Personaje> pl = getPersonajes();
+    synchronized (pl) {
+      pl.notifyAll();
+    }
+  }
+
+  private void hacerEspecial(Estructura.Casilla casilla, final Hero hero) {
+
+    if (casilla == null) {
+      return;
+    }
+    Espacio tipo = casilla.getTipo();
+    if (tipo == null) {
+      return;
+    }
+    Espacio.Especial especial = tipo.getEspecial();
+    if (especial == null) {
+      return;
+    }
+
+    Integer cura = especial.getCura();
+    Integer danio = especial.getDanio();
+    final Integer invi = especial.getInvencibilidad();
+    Integer magia = especial.getMagia();
+    boolean change = false;
+    if (cura > 0) {
+      hero.personaje.ganarVida(cura);
+      change = true;
+    }
+    if (danio > 0) {
+      hero.personaje.hacerDanio(danio);
+      change = true;
+    }
+    if (invi > 0) {
+      hero.personaje.setEstado(Personaje.Estado.INVENCIBLE);
+      new Thread(new Runnable() {
+        @Override
+        public void run() {
+          try {
+            Thread.sleep(invi);
+            hero.personaje.setEstado(Personaje.Estado.VIVO);
+            cambiosPersonaje();
+          } catch (InterruptedException ex) {
+            Logger.getLogger(Escenario.class.getName()).log(Level.SEVERE, null, ex);
+          }
+
+        }
+      }).start();
+      change = true;
+    }
+    if (magia > 0) {
+      hero.personaje.ganarMagia(magia);
+      change = true;
+    }
+
+    if (change) {
+      //cambios que se realizaron sobre personajes
+      //y necesitan ser actulizados en threads
+      //por ejemplo para actulizar los datos en labels
+      cambiosPersonaje();
+    }
+
+  }
+
+  private void drawAttacks(Graphics g) {
+    ArrayList<Ataque> al = getAtaques();
+
+    synchronized (al) {
+      for (Ataque ataque : al) {
+        drawGItem(g, ataque);
+      }
+    }
+  }
+
+  private void drawMalos(Graphics g) {
+    LinkedList<Malo> l = getMalos();
+    
+    synchronized (l){
+    for (Malo malo : l) {
+//      if (hero.personaje.getEstado() != Personaje.Estado.MUERTO) {
+        drawGItem(g, malo);
+//      }
+    }
     }
   }
 
@@ -267,6 +579,14 @@ public class Escenario extends javax.swing.JPanel {
     int keyDown = KeyEvent.VK_DOWN;
     int keyLeft = KeyEvent.VK_LEFT;
     int keyRight = KeyEvent.VK_RIGHT;
+    Direction face = Direction.UP;
+    int angle = 0;
+    Point real = new Point(0, 0);
+
+    public enum Direction {
+
+      LEFT, RIGHT, UP, DOWN
+    }
 
     public MItem(Image img) {
       super(img);
@@ -274,83 +594,294 @@ public class Escenario extends javax.swing.JPanel {
 
     @Override
     public void moveUp() {
-      point.y--;
+      switch (face) {
+        case LEFT:
+          point.x--;
+          break;
+        case RIGHT:
+          point.x++;
+          break;
+        case UP:
+          point.y--;
+          break;
+        case DOWN:
+          point.y++;
+          break;
+        default:
+          throw new AssertionError(face.name());
+      }
+    }
+
+    public void moveRealUp() {
+      switch (face) {
+        case LEFT:
+          real.x -= MOVE_SPEED;
+          break;
+        case RIGHT:
+          real.x += MOVE_SPEED;
+          break;
+        case UP:
+          real.y -= MOVE_SPEED;
+          break;
+        case DOWN:
+          real.y += MOVE_SPEED;
+          break;
+        default:
+          throw new AssertionError(face.name());
+      }
     }
 
     @Override
     public void moveDown() {
-      point.y++;
+      switch (face) {
+        case LEFT:
+          point.x++;
+          break;
+        case RIGHT:
+          point.x--;
+          break;
+        case UP:
+          point.y++;
+          break;
+        case DOWN:
+          point.y--;
+          break;
+        default:
+          throw new AssertionError(face.name());
+      }
     }
+
+    public void moveRealDown() {
+      switch (face) {
+        case LEFT:
+          real.x += MOVE_SPEED;
+          break;
+        case RIGHT:
+          real.x -= MOVE_SPEED;
+          break;
+        case UP:
+          real.y += MOVE_SPEED;
+          break;
+        case DOWN:
+          real.y -= MOVE_SPEED;
+          break;
+        default:
+          throw new AssertionError(face.name());
+      }
+    }
+    final int DEGRRE_MOVE = 90;
+    final int MOVE_SPEED = 10;
 
     @Override
     public void moveLeft() {
-      point.x--;
+      angle -= DEGRRE_MOVE;
+      switch (face) {
+        case LEFT:
+          face = Direction.DOWN;
+          break;
+        case RIGHT:
+          face = Direction.UP;
+          break;
+        case UP:
+          face = Direction.LEFT;
+          break;
+        case DOWN:
+          face = Direction.RIGHT;
+          break;
+        default:
+          throw new AssertionError(face.name());
+      }
     }
 
     @Override
     public void moveRight() {
-      point.x++;
+      angle += DEGRRE_MOVE;
+      switch (face) {
+        case LEFT:
+          face = Direction.UP;
+          break;
+        case RIGHT:
+          face = Direction.DOWN;
+          break;
+        case UP:
+          face = Direction.RIGHT;
+          break;
+        case DOWN:
+          face = Direction.LEFT;
+          break;
+        default:
+          throw new AssertionError(face.name());
+      }
     }
 
     public Point nextMoveDown() {
       Point next = new Point(point);
-      next.y++;
+      switch (face) {
+        case LEFT:
+          next.x++;
+          break;
+        case RIGHT:
+          next.x--;
+          break;
+        case UP:
+          next.y++;
+          break;
+        case DOWN:
+          next.y--;
+          break;
+        default:
+          throw new AssertionError(face.name());
+      }
       return next;
     }
 
-    public Point nextMoveLeft() {
-      Point next = new Point(point);
-      next.x--;
-      return next;
-    }
-
-    public Point nextMoveRight() {
-      Point next = new Point(point);
-      next.x++;
+    public Point nextRMoveDown() {
+      Point next = new Point(real);
+      switch (face) {
+        case LEFT:
+          next.x += MOVE_SPEED;
+          break;
+        case RIGHT:
+          next.x -= MOVE_SPEED;
+          break;
+        case UP:
+          next.y += MOVE_SPEED;
+          break;
+        case DOWN:
+          next.y -= MOVE_SPEED;
+          break;
+        default:
+          throw new AssertionError(face.name());
+      }
       return next;
     }
 
     public Point nextMoveUp() {
       Point next = new Point(point);
-      next.y--;
+      switch (face) {
+        case LEFT:
+          next.x--;
+          break;
+        case RIGHT:
+          next.x++;
+          break;
+        case UP:
+          next.y--;
+          break;
+        case DOWN:
+          next.y++;
+          break;
+        default:
+          throw new AssertionError(face.name());
+      }
       return next;
     }
+
+    public Point nextRMoveUp() {
+      Point next = new Point(real);
+      switch (face) {
+        case LEFT:
+          next.x -= MOVE_SPEED;
+          break;
+        case RIGHT:
+          next.x += MOVE_SPEED;
+          break;
+        case UP:
+          next.y -= MOVE_SPEED;
+          break;
+        case DOWN:
+          next.y += MOVE_SPEED;
+          break;
+        default:
+          throw new AssertionError(face.name());
+      }
+      return next;
+    }
+
+    public Direction getFace() {
+      return face;
+    }
+
+    public void setFace(Direction face) {
+      switch(face){
+        case LEFT:
+          angle=90;
+          break;
+        case RIGHT:
+          angle=-90;
+          break;
+        case UP:
+          angle=0;
+          break;
+        case DOWN:
+          angle=180;
+          break;
+        default:
+          throw new AssertionError(face.name());
+      }
+      this.face = face;
+    }
+    
+    
+    
   }
 
   public static class Hero extends MItem {
 
-    public Hero(Image img) {
-      super(img);
+    Personaje personaje;
+    int KeyAttack;
+    int KeyMagic;
+
+    public Hero(Personaje personaje) {
+      super(personaje.getImagen());
+      this.personaje = personaje;
+
+      this.keyUp = personaje.getKeys()[0];
+      this.keyRight = personaje.getKeys()[1];
+      this.keyDown = personaje.getKeys()[2];
+      this.keyLeft = personaje.getKeys()[3];
+      this.KeyAttack = personaje.getKeys()[4];
+      this.KeyMagic = personaje.getKeys()[5];
     }
   }
-  //</editor-fold>
+  
+  public static class Malo extends MItem{
 
-  //<editor-fold defaultstate="collapsed" desc="getter and setter">
-  public Estructura getEstructura() {
-    if (estructura == null) {
-      //<editor-fold defaultstate="collapsed" desc="default">
-      final Estructura e = new Estructura("Ejemplo", new Dimension(4, 4));
-      Estructura.Casilla inicio = new Estructura.Casilla(new Point(0, 0), new Espacio("t1", new File("ext/start.png")));
-      Estructura.Casilla fin = new Estructura.Casilla(new Point(3, 2), new Espacio("t4", new File("ext/end.png")));
-
-      Point[] walls = new Point[]{
-        new Point(0, 1), new Point(0, 2),
-        new Point(2, 1), new Point(2, 2),
-        new Point(3, 0), new Point(3, 1)
-      };
-      Espacio we = new Espacio("wall", new File("ext/texture/wall.jpg"));
-      we.setPasable(false);
-      for (Point w : walls) {
-        Estructura.Casilla wc = new Estructura.Casilla(w, we);
-        e.addCasilla(wc);
-      }
-
-      e.addCasilla(inicio);
-      e.addCasilla(fin);
-
-      setEstructura(e);
-      //</editor-fold>
+    public Malo(Image img) {
+      super(img);
     }
+
+    
+    
+    
+    
+    public void setFaceToX(int toX){
+      setFace(Direction.LEFT);
+      int x=point.x;
+      int nx=nextMoveUp().x;
+      int d=Math.abs(toX-x);
+      int nd=Math.abs(toX-nx);
+      if(d<nd){
+        setFace(Direction.RIGHT);
+      }
+      
+    }
+
+    public void setFaceToY(int toY) {
+      setFace(Direction.UP);
+      int y=point.y;
+      int ny=nextMoveUp().y;
+      int d=Math.abs(toY-y);
+      int nd=Math.abs(toY-ny);
+      if(d<nd){
+        setFace(Direction.DOWN);
+      }
+    }
+  }
+//</editor-fold>
+//<editor-fold defaultstate="collapsed" desc="getter and setter">
+
+  public synchronized Estructura getEstructura() {
     return estructura;
   }
 
@@ -359,23 +890,29 @@ public class Escenario extends javax.swing.JPanel {
   }
 
   public LinkedList<Hero> getHeroes() {
-    if (heroes.isEmpty()) {
-      //defaults...
-      Hero h1 = new Hero(new ImageIcon("ext/character/gimnor.png").getImage());
-      Hero h2 = new Hero(new ImageIcon("ext/character/lizardman.png").getImage());
-      h2.point = new Point(1, 0);
-      h2.keyDown = KeyEvent.VK_S;
-      h2.keyLeft = KeyEvent.VK_A;
-      h2.keyRight = KeyEvent.VK_D;
-      h2.keyUp = KeyEvent.VK_W;
-      addHero(h1);
-      addHero(h2);
-    }
     return heroes;
   }
 
   public HashMap<Integer, HashSet<Hero>> getKeyMap() {
     return keyMap;
   }
+
   //</editor-fold>
+  public synchronized LinkedList<Personaje> getPersonajes() {
+    return personajes;
+  }
+  //11 april
+  ArrayList<Ataque> ataques = new ArrayList<>();
+
+  public class Ataque extends MItem {
+
+    public Ataque(Image img, Point point) {
+      super(img);
+      super.point = point;
+    }
+  }
+
+  public synchronized ArrayList<Ataque> getAtaques() {
+    return ataques;
+  }
 }

@@ -43,6 +43,7 @@ public class Compiler {
         p.parse();
         p.errores.addAll(s.errors);
         map.put("errores", p.errores);
+        map.put("enemigo", p.enemigos);
       } else {
         System.err.println("Archivo desconocido...");
       }

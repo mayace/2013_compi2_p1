@@ -12,6 +12,8 @@ import java.util.HashSet;
 import java.lang.Thread.State;
 import java.awt.Dimension;
 import java.awt.Point;
+import java.awt.Image;
+import javax.swing.ImageIcon;
 
 
 parser code {:
@@ -65,10 +67,10 @@ action code{:
 
 /****************************************************************************************/
 terminal		String	INT,ID,INICIAR,FINALIZAR,NOMBRE,VIDA,FUERZA,MAGIA,FUERZA_MAGICA,
-						COSTO_MAGICO,COLON
+						COSTO_MAGICO,COLON,STRING,IMAGEN
 						;
 non terminal	Attr	inicio,id,int,psj,psj_body,psj_list,psj_item,psj_nombre,psj_vida,psj_magia,
-						psj_fuerza_magica,psj_costo_magico,psj_fuerza
+						psj_fuerza_magica,psj_costo_magico,psj_fuerza,psj_imagen,string
 						;
 						
 /****************************************************************************************/
@@ -83,12 +85,20 @@ psj				::=	INICIAR psj_body:x FINALIZAR
 						Integer	magia			=	x.getInt("magia");
 						Integer	fuerza_magica	=	x.getInt("fuerza_magica");
 						Integer	costo_magico	=	x.getInt("costo_magico");
+						String	imagen			=	x.getString("imagen");
+						
 						
 						
 						
 						if(nombre!=null&&vida!=null&&fuerza!=null&&magia!=null&&fuerza_magica!=null&&costo_magico!=null){
 							parser.personaje=new Personaje(nombre,vida,fuerza,magia,fuerza_magica,costo_magico);
-							System.out.println("Personaje: "+nombre+" creado...");
+							
+							if(imagen==null){
+								imagen="ext/psj/car1.png";
+							}
+							Image img=(new ImageIcon(imagen)).getImage();
+							parser.personaje.setImagen(img);
+							//System.out.println("Personaje: "+nombre+" creado...");
 						}
 						else{
 							Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top-2);
@@ -158,6 +168,11 @@ psj_item		::=	psj_nombre:x
 						x.set("costo_magico",x.get("val"));
 						RESULT=x;
 					:}			
+					|psj_imagen:x		
+					{:
+						x.set("imagen",x.get("val"));
+						RESULT=x;
+					:}			
 					|error				
 					{:
 						error("Se esperaba un atributo.",null,SINTACTICO);
@@ -177,6 +192,8 @@ psj_fuerza_magica	::=	int:x COLON FUERZA_MAGICA	{:RESULT=x;:}
 						;
 psj_costo_magico	::=	int:x COLON COSTO_MAGICO	{:RESULT=x;:}
 						;
+psj_imagen			::=	string:x COLON IMAGEN		{:RESULT=x;:}
+						;
 
 id					::=	ID:x
 						{:
@@ -189,6 +206,15 @@ id					::=	ID:x
 						:}
 						;
 int					::=	INT:x
+						{:
+							Attr a=new Attr();
+							Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top);
+							a.set("val",x);
+							a.set("sym",sym);
+							RESULT=a;
+						:}
+						;
+string					::=	STRING:x
 						{:
 							Attr a=new Attr();
 							Object sym=CUP$Parser$stack.elementAt(CUP$Parser$top);
